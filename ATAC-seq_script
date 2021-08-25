@@ -21,7 +21,7 @@ methylQA density -Q 10 -r -T -E 0 -I 2000 -o "SAMPLE_MAPQ30.sorted.rmdup.downsam
 awk -v OFS="\t" '{if ($6=="+") print $1,$2+4,$3+4,$4,$5,$6; else if ($6=="-") print $1,$2-5,$3-5,$4,$5,$6}' "SAMPLE_MAPQ30.sorted.rmdup.downsampled.extend.bed" > "SAMPLE_MAPQ30.sorted.rmdup.downsampled.Tshift.bed}"
 #NOTE THAT THIS CAN LEAD TO NEGATIVE VALUES FOR READS AT ENDS OF CHROMOSOMES, so make sure the start site is >0
 
-#make Genome browser files on just the ends of ATAC reads
+# make Genome browser files on just the ends of ATAC reads ("R analysis")
 # import shifted bed file, Iri and Mel samples
 Iri1 <- read.table("Iri_Rep1.downsampled.Tshift.fixed.bed", sep = "\t", header = F, stringsAsFactors = F)
 Iri2 <- read.table("Iri_Rep2.downsampled.Tshift.fixed.bed", sep = "\t", header = F, stringsAsFactors = F)
@@ -126,7 +126,7 @@ for i in *peaks.txt; do wc -l $i;done
 #114207 Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt
 #103868 Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt
 
-##Use R to quantify peaks##
+## Use R to quantify peaks ##
 library(reshape)
 library(RColorBrewer)
 library(ggplot2)
@@ -298,7 +298,7 @@ for i in *.downsampled.Tshift.fixed.bed; do echo $i & bedtools intersect -u -a $
 
 
 
-### DiffBIND to call DARs (with IDR peaks and FDR 0.001) ###
+### DiffBIND to call DARs (with IDR peaks and FDR 0.001) ("R analysis")###
 library(DiffBind)
 setwd("DiffBind/DiffBind_IDRpeaks")
 samples <- read.csv("DiffBind/Pigment_Diffbind_ATAC.csv")
