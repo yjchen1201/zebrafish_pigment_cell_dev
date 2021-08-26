@@ -10,7 +10,6 @@ STAR --readFilesCommand zcat --outTmpDir <out_temp_dirctory> --clip5pNbases 11 -
 STAR --runMode inputAlignmentsFromBAM --inputBAMfile "SAMPLE_sortedByCoord.bam" --outWigType bedGraph --outWigStrand Unstranded --outWigNorm RPM --outFileNamePrefix "SAMPLE_sortedByCoord.out.bam"
 htseq-count -f bam -r pos -s no -t transcript $i "Danio_rerio.GRCz10.85.gtf" > "SAMPLE_sortedByCoord.counts"
 
-
 stringtie "SAMPLE_sortedByCoord.out.bam" -o "RefSeq.gtf" -A "RefSeq.gene.abundance.txt" -G "danRer10_RefSeq_forstringtie.gtf"
 
 #Filter NM genes only#
@@ -18,7 +17,10 @@ python3 Filter_only_NM.py "SAMPLE_abundance.txt"
 #Make list of all genes expressed in NCC and pigment cells (RefSeq)
 python3 All_expressed_genelist_RefSeq.py RNA_15somiteNCC_Rep2.gene.abundance.filteredNM.txt RNA_15somiteNCC_Rep4.gene.abundance.filteredNM.txt RNA_24hpfNCC_Rep1.gene.abundance.filteredNM.txt RNA_24hpfNCC_Rep2.gene.abundance.filteredNM.txt RNA_Mel_Rep1.gene.abundance.filteredNM.txt RNA_Mel_Rep2.gene.abundance.filteredNM.txt RNA_Iri_Rep2.gene.abundance.filteredNM.txt RNA_Iri_Rep3.gene.abundance.filteredNM.txt 
 
-#Merge all gene expression in R
+
+
+############################### {R analysis} ###############################
+#Merge all gene expression
 library(ggplot2)
 library(RColorBrewer)
 mypalette <- brewer.pal(12,"Paired")
@@ -34,7 +36,7 @@ Mel_R2 <- read.table("<path to RNA folder>/stringtie/RNA_Mel_Rep2.gene.abundance
 Iri_R1 <- read.table("<path to RNA folder>/stringtie/RNA_Iri_Rep1.gene.abundance.filteredNM.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
 Iri_R2 <- read.table("<path to RNA folder>/stringtie/RNA_Iri_Rep2.gene.abundance.filteredNM.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
 
-#TPM PCA
+#TPM PCA plot
 exp3<-Reduce(function(x, y) merge(x, y,by = "V1"), list(genelist,s15_R1[,c(1,8)],s15_R2[,c(1,8)], s24_R1[,c(1,8)],s24_R2[,c(1,8)],Mel_R1[,c(1,8)],Mel_R2[,c(1,8)], Iri_R1[,c(1,8)],Iri_R2[,c(1,8)]))
 colnames(exp3) <- c("gene","s15_Rep1","s15_Rep2","s24_Rep1","s24_Rep2","Mel_Rep1","Mel_Rep2","Iri_Rep1","Iri_Rep2")
 exp3 <- exp3[!duplicated(exp3$gene),]
@@ -87,14 +89,14 @@ res_24hpf_Mel_p0.01 <- subset(res_24hpf_Mel, padj < 0.01)
 res_24hpf_Iri_p0.01 <- subset(res_24hpf_Iri, padj < 0.01)
 res_Mel_Iri_p0.01 <- subset(res_Mel_Iri, padj < 0.01)
 
-#export the DEGs: gene	baseMean	log2FoldChange	lfcSE	stat	pvalue	padj
+#export the DEGs, Columns: gene  baseMean  log2FoldChange  lfcSE stat  pvalue  padj
 write.table(as.data.frame(res_15pos_24hpf_p0.01),file="<path to RNA folder>/DESeq2/DEGs_15somite_24hpf_p0.01.txt", col.names = F, row.names = T,quote = F, sep = "\t")
 write.table(as.data.frame(res_24hpf_Mel_p0.01),file="<path to RNA folder>/DESeq2/DEGs_24hpf_Mel_p0.01.txt", col.names = F, row.names = T,quote = F, sep = "\t")
 write.table(as.data.frame(res_24hpf_Iri_p0.01),file="<path to RNA folder>/DESeq2/DEGs_24hpf_Iri_p0.01.txt", col.names = F, row.names = T,quote = F, sep = "\t")
 write.table(as.data.frame(res_Mel_Iri_p0.01),file="<path to RNA folder>y/DESeq2/DEGs_Mel_Iri_p0.01.txt", col.names = F, row.names = T,quote = F, sep = "\t")
 
 
-#PCA
+#PCA plot
 rld <- rlog(dds1, blind=FALSE)
 data <- plotPCA(rld, intgroup=c("condition"), returnData=TRUE)
 percentVar <- round(100 * attr(data, "percentVar"))
@@ -104,7 +106,7 @@ xlab(paste0("PC1: ",percentVar[1],"% variance")) +
 ylab(paste0("PC2: ",percentVar[2],"% variance")) +labs(title = "PCA analysis of RNA expression")+theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 16), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
       scale_fill_manual(values = mypalette[c(1,3,5,7)])+scale_color_manual(values=mypalette[c(1,3,5,7)])+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))
 
-#hierchal clsutering heatmap
+#Hierchal clustering heatmap
 library("RColorBrewer")#heatmap based on euclidian distance
 library(pheatmap)
 sampleDists <- dist(t(assay(rld)))
@@ -135,13 +137,12 @@ plotMA(res_Mel_Iri, main="Melanophore vs Iridophore", ylim=c(-6,6), alpha = 0.00
 #MAKE master list of DEGs for comparision
 python3 All_DEGs_list.py DEGs_15somite_24hpf_p0.01.txt DEGs_24hpf_Mel_p0.01.txt DEGs_24hpf_Iri_p0.01.txt DEGs_Mel_Iri_p0.01.txt
 
-
 setwd("<path to RNA folder>/DESeq2")
 genelist <- read.table("Combined_DEGs_list.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
-s15_s24<- read.table("DEGs_15somite_24hpf_p0.001.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
-s24_M <- read.table("DEGs_24hpf_Mel_p0.001.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
-s24_I <- read.table("DEGs_24hpf_Iri_p0.001.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
-M_I <- read.table("DEGs_Mel_Iri_p0.001.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
+s15_s24<- read.table("DEGs_15somite_24hpf_p0.01.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
+s24_M <- read.table("DEGs_24hpf_Mel_p0.01.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
+s24_I <- read.table("DEGs_24hpf_Iri_p0.01.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
+M_I <- read.table("DEGs_Mel_Iri_p0.01.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
 
 DEG <-Reduce(function(x, y) merge(x, y,by = "V1", all = T), list(genelist,s15_s24[,c(1:3)],s24_M[,c(1:3)],s24_I[,c(1:3)],M_I[,c(1:3)]))
 colnames(DEG) <- c("gene","s15v24hpf_mean_expression","s15v24hpf_log2_change","s24vMel_mean_expression","s24vMel_log2_change","s24vIri_mean_expression","s24vIri_log2_change","MelvIri_mean_expression","MelvIri_log2_change")
@@ -172,7 +173,7 @@ DEG2 <- DEG2[!duplicated(DEG2$gene),]
 write.table(DEG2,"DEGs_combined_samples_p0.01.txt",col.names = T, row.names = F,quote = F, sep = "\t")
 
 
-###GOT TF list from AnimalTFDB ####
+### GOT TF list from AnimalTFDB ####
 # Lots of TF missing in zebrafish. Combine with human TFs that have been converted using orthoretriever
 TFlist <- read.table("Danio_rerio_transcription_factors_gene_list.txt",header = T, ,quote = "", sep = "\t",stringsAsFactors = F)
 homo_TFlist <- read.table("homo_danrer_TF.txt",header = T, ,quote = "", sep = "\t",stringsAsFactors = F)
@@ -214,10 +215,7 @@ DEG2[DEG2$genename %in% homo_TFlist$Input.Common.Name,]$type <- "TF"
 DEG2[DEG2$genename %in% homo_cofactorlist$Input.Common.Name,]$type <- "Cofactor"
 DEG2[DEG2$genename %in% homo_CRMlist$Input.Common.Name,]$type <- "ChomatinRemodeler"
 
-
 write.table(DEG2,"DEGs_combined_samples_p0.01_wTFinfo.txt",col.names = T, row.names = F,quote = F, sep = "\t")
-
-
 
 
 #### Identify DEGs for each cell type
@@ -350,7 +348,6 @@ with(res_Mel_Iri[IriGene, ], {
 })
 
 
-
 # Get transcription factors that differentially expressed
 
 ## All DEGs
@@ -406,7 +403,6 @@ s24_Iri_DEG_on_on <- TF_DEG2[TF_DEG2$s15v24hpf_log2_change < 0 & TF_DEG2$s24vIri
 
 s24_specific_DEG_on_off <- TF_DEG2[TF_DEG2$s15v24hpf_log2_change < 0 & TF_DEG2$s24vMel_log2_change >0 & TF_DEG2$s24vIri_log2_change >0,] #15
 s15_specific_DEG_on_off <- TF_DEG2[TF_DEG2$s15v24hpf_log2_change > 0 & TF_DEG2$s24vMel_log2_change >=0 & TF_DEG2$s24vIri_log2_change >=0,] #15
-
 
 # Record to files
 write.table(Mel_specific_DEG_on,"Mel_specific_TranscriptionFactor_DEG_on_stringentParameters_p0.01.txt",col.names = T, row.names = F,quote = F, sep = "\t")
@@ -515,8 +511,6 @@ ht = Heatmap(df.OG, column_title = "TFs",name= "RPKM",col = colorRamp2(c(0,5,10,
     cluster_rows = F, cluster_columns = FALSE,show_row_names = F)
 ht
 
-
-
 name <- NCC[,2]
 df.OG2 <- NCC[,c(3,4,5,6)]
 row.names(df.OG2) <- name
@@ -586,7 +580,6 @@ ht_I =  Heatmap(df.OG2, column_title = "Iri-specific Transcription Factors",name
 ht_I
 
 
-
 dplyr::filter(TFlist_RPKM_DEG, grepl("tfe",genename))
 dplyr::filter(TFs, grepl("tfe",genename.x))
 
@@ -619,11 +612,11 @@ Iri_specific_DEG_off_loose <- CO_DEG2[CO_DEG2$s24vMel_log2_change <=0 & CO_DEG2$
 
 s24_specific_DEG_on_on <- CO_DEG2[CO_DEG2$s15v24hpf_log2_change < 0 & CO_DEG2$s24vMel_log2_change <=0 & CO_DEG2$s24vIri_log2_change <=0,] #3
 s24_specific_DEG_off_off <- CO_DEG2[CO_DEG2$s15v24hpf_log2_change > 0 & CO_DEG2$s24vMel_log2_change >=0 & CO_DEG2$s24vIri_log2_change >=0,] #8
+s24_specific_DEG_on_off <- CO_DEG2[CO_DEG2$s15v24hpf_log2_change < 0 & CO_DEG2$s24vMel_log2_change >0 & CO_DEG2$s24vIri_log2_change >0,] #1
 
 s24_Mel_DEG_on_on <- CO_DEG2[CO_DEG2$s15v24hpf_log2_change < 0 & CO_DEG2$s24vMel_log2_change ==0 & CO_DEG2$s24vIri_log2_change >0 & CO_DEG2$MelvIri_log2_change >=0,] #3
 s24_Iri_DEG_on_on <- CO_DEG2[CO_DEG2$s15v24hpf_log2_change < 0 & CO_DEG2$s24vIri_log2_change ==0 & CO_DEG2$s24vMel_log2_change >0 & CO_DEG2$MelvIri_log2_change <=0,] #1
 
-s24_specific_DEG_on_off <- CO_DEG2[CO_DEG2$s15v24hpf_log2_change < 0 & CO_DEG2$s24vMel_log2_change >0 & CO_DEG2$s24vIri_log2_change >0,] #1
 
 
 write.table(Mel_specific_DEG_on,"Mel_specific_COFACTOR_DEG_on_stringentParameters_p0.01.txt",col.names = T, row.names = F,quote = F, sep = "\t")
