@@ -9,9 +9,7 @@
 ##macs2 2.1.1.20160309
 ##Program: bwa (alignment via Burrows-Wheeler transformation) Version: 0.7.15-r1140
 
-
-# Replace <> part with actual path and "" with actual file
-##################################### MEthylation ANALYSIS (ENDED UP USING d30)#########################################
+ ##################################### WGBS ANALYSIS (ENDED UP USING d30)#########################################
 ## Example of BS-seq pipeline#
 
 # Adapter trimming
@@ -39,6 +37,7 @@ bismark_methylation_extractor -p --no_overlap --comprehensive --gzip --no_header
 bismark --quiet <path to lambda genome> -1 "SAMPLE_R1.fastq.gz" -2 "SAMPLE_R2.fastq.gz"
 
 
+###################################################### {R analysis} ######################################################
 ##QC individual WGBS Replicates##
 setwd(<WGBS_folder>)
 library(ggplot2)
@@ -90,7 +89,7 @@ a <-ggplot(meth, aes(Meth, fill = Type, colour = Type)) + geom_density(alpha = 0
       labs(x = "Coverage", y = "Density")+scale_fill_manual(values = mypalette)+scale_color_manual(values=mypalette)+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))
 a
 
-#PCA#
+#PCA plot#
 filter = 5
 m<-Reduce(function(x, y) merge(x, y, by=c("chr","pos")), list(Mel_R1[Mel_R1$N >= filter,c(1,2,5)],Mel_R2[Mel_R2$N >= filter,c(1,2,5)],Iri_R1[Iri_R1$N >= filter,c(1,2,5)],Iri_R2[Iri_R2$N >= filter,c(1,2,5)],s24_R1[s24_R1$N >= filter,c(1,2,5)],s24_R2[s24_R2$N >= filter,c(1,2,5)],s15_R1[s15_R1$N >= filter,c(1,2,5)],s15_R2[s15_R2$N >= filter,c(1,2,5)]))
 names(m) <- c("chr","start","Mel-R1","Mel-R2","Iri-R1","Iri-R2","24hpf-R1","24hpf-R2","s15-R1","s15-R2")
@@ -210,7 +209,6 @@ me$Type <- factor(me$Type, levels = c("15somite","24hpf","Mel","Iri"))
 p1 <- ggplot(data=me, aes(x=Type, y=Methylation, fill=Type)) +geom_bar(stat="identity",colour = "black", position=position_dodge())+ggtitle("Average Methylation across samples (coverage filter >=5)")+theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 16), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
       labs(x = "Library", y = "Average Methylation")+scale_y_continuous(lim = c(0,1))+scale_fill_manual(values = mypalette[c(1,3,5,7)])+scale_color_manual(values=mypalette[c(1,3,5,7)])+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))+geom_text(data=me,aes(x=Type,y=Methylation+0.03,label=paste(round(Methylation,3)*100,"%",sep ="")),size=8)+ theme(legend.position="none")
 p1
-
 
 #Number of CpG covered #
 co <- data.frame(c(rep("Mel", 3),rep("Iri", 3),rep("24hpf", 3),rep("s15", 3)),c(nrow(Mel_combined[Mel_combined$N>0,]), nrow(Mel_combined[Mel_combined$N>=5,]), nrow(Mel_combined[Mel_combined$N>=10,]),nrow(Iri_combined[Iri_combined$N>0,]), nrow(Iri_combined[Iri_combined$N>=5,]), nrow(Iri_combined[Iri_combined$N>=10,]),nrow(s24pos_combined[s24pos_combined$N>0,]), nrow(s24pos_combined[s24pos_combined$N>=5,]), nrow(s24pos_combined[s24pos_combined$N>=10,]),nrow(s15pos_combined[s15pos_combined$N>0,]), nrow(s15pos_combined[s15pos_combined$N>=5,]), nrow(s15pos_combined[s15pos_combined$N>=10,])),c(rep(c(">0",">=5",">=10"),4)))
