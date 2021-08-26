@@ -1,5 +1,6 @@
 ####################################################################     ATAC SEQ         #######################################################################
 ##Example used for Analysis##
+
 # adapter trimming
 cutadapt -a CTGTCTCTTATACACATCTCCGAGCCCACGAGAC -A CTGTCTCTTATACACATCTGACGCTGCCGACGA --minimum-length 25 -o "SAMPLE_R1_trimmed.fastq.gz" -p "SAMPLE_R2_trimmed.fastq.gz" "SAMPLE_R1_fastq.gz" "SAMPLE_R2_fastq.gz"; done
 # Align to danRer10 using bwa mem
@@ -11,24 +12,26 @@ samtools sort -o "SAMPLE_MAPQ30.sorted.bam" "SAMPLE_MAPQ30.bam"
 # Remove duplicates
 java -jar $PICARD_HOME/picard.jar MarkDuplicates REMOVE_SEQUENCING_DUPLICATES=True REMOVE_DUPLICATES=True "SAMPLE_MAPQ30.sorted.bam" "SAMPLE_MAPQ30.sorted.rmdup" "SAMPLE_MAPQ30.sorteddup_removed.txt" ASSUME_SORTED=true
 
-#Downsample reads to 35million#
+#Downsample reads to 35million 
 samtools view -h -b -s 0.3125 "SAMPLE_MAPQ30.sorted.rmdup.bam" > "SAMPLE_MAPQ30.sorted.rmdup.downsampled.bam"
 
 # using MethylQA to covert bam to single-end read bed file
 methylQA density -Q 10 -r -T -E 0 -I 2000 -o "SAMPLE_MAPQ30.sorted.rmdup.downsampled" "danRer10_lite.size" "SAMPLE_MAPQ30.sorted.rmdup.downsampled.bam"
 
-# Shift Transposome inserted site
+# shift transposome inserted site
 awk -v OFS="\t" '{if ($6=="+") print $1,$2+4,$3+4,$4,$5,$6; else if ($6=="-") print $1,$2-5,$3-5,$4,$5,$6}' "SAMPLE_MAPQ30.sorted.rmdup.downsampled.extend.bed" > "SAMPLE_MAPQ30.sorted.rmdup.downsampled.Tshift.bed}"
 #NOTE THAT THIS CAN LEAD TO NEGATIVE VALUES FOR READS AT ENDS OF CHROMOSOMES, so make sure the start site is >0
 
-# make Genome browser files on just the ends of ATAC reads ("R analysis")
+
+############################ {R analysis} ######################################
+# make Genome browser files on just the ends of ATAC reads 
 # import shifted bed file, Iri and Mel samples
 Iri1 <- read.table("Iri_Rep1.downsampled.Tshift.fixed.bed", sep = "\t", header = F, stringsAsFactors = F)
 Iri2 <- read.table("Iri_Rep2.downsampled.Tshift.fixed.bed", sep = "\t", header = F, stringsAsFactors = F)
 Mel1 <- read.table("Mel_Rep1.downsampled.Tshift.fixed.bed", sep = "\t", header = F, stringsAsFactors = F)
 Mel2 <- read.table("Mel_Rep2.downsampled.Tshift.fixed.bed", sep = "\t", header = F, stringsAsFactors = F)
 
-#fix the start site to 1 based
+# fix the start site to 1 based
 Iri1$start <- apply(Iri1, 1, function(x) {if (x[6] == "+") {as.numeric(x[2])} else {as.numeric(x[3])}})
 Iri1$end <- Iri1$start+1
 Iri1$count <- 1
@@ -80,14 +83,14 @@ s15_2$start <- apply(s15_2, 1, function(x) {if (x[6] == "+") {as.numeric(x[2])} 
 s15_2$end <- s15_2$start+1
 s15_2$count <- 1
 s15_2_aggregate <- ddply(s15_2, .(V1,start,end), summarise, coverage = sum(count))
-write.table(s15_2_aggregate, "15somite_pos_downsampled.Tshift.fixed.tagmentpositions.bed", sep = "\t", col.names = F, row.names = F, quote = F)
-write.table(s24_1_aggregate, "24hpf_pos_Rep1_downsampled.Tshift.fixed.tagmentpositions.bed", sep = "\t", col.names = F, row.names = F, quote = F)
-write.table(s24_2_aggregate, "24hpf_pos__Rep2_downsampled.Tshift.fixed.tagmentpositions.bed", sep = "\t", col.names = F, row.names = F, quote = F)
+
+#Create shifted bed files
 write.table(s15_1_aggregate, "15somite_pos_Rep1_downsampled.Tshift.fixed.tagmentpositions.bed", sep = "\t", col.names = F, row.names = F, quote = F)
+write.table(s15_2_aggregate, "15somite_pos_Rep2_downsampled.Tshift.fixed.tagmentpositions.bed", sep = "\t", col.names = F, row.names = F, quote = F)
+write.table(s24_1_aggregate, "24hpf_pos_Rep1_downsampled.Tshift.fixed.tagmentpositions.bed", sep = "\t", col.names = F, row.names = F, quote = F)
+write.table(s24_2_aggregate, "24hpf_pos_Rep2_downsampled.Tshift.fixed.tagmentpositions.bed", sep = "\t", col.names = F, row.names = F, quote = F)
 
-
-
-#combine Reps togethers for Centipede
+#combine Replicates together for Centipede
 Iri1_aggregate <- read.table("Iri_Rep1_downsampled.Tshift.fixed.tagmentpositions.bed", sep = "\t", header = F, stringsAsFactors = F)
 Iri2_aggregate <- read.table("Iri_Rep2_downsampled.Tshift.fixed.tagmentpositions.bed", sep = "\t", header = F, stringsAsFactors = F)
 Iricombined_aggregate <- merge(Iri1_aggregate,Iri2_aggregate, by=c("V1","V2","V3"), all = T)
@@ -103,14 +106,15 @@ Melcombined_aggregate$combined <- Melcombined_aggregate$V4.x+Melcombined_aggrega
 write.table(Melcombined_aggregate[,c(1,2,3,6)], "Mel_combined_downsampled.Tshift.fixed.tagmentpositions.bed", sep = "\t", col.names = F, row.names = F, quote = F)
 
 s24_1_aggregate <- read.table("24hpf_pos_Rep1_downsampled.Tshift.fixed.tagmentpositions.bed", sep = "\t", header = F, stringsAsFactors = F)
-s24_2_aggregate <- read.table("24hpf_pos__Rep2_downsampled.Tshift.fixed.tagmentpositions.bed", sep = "\t", header = F, stringsAsFactors = F)
+s24_2_aggregate <- read.table("24hpf_pos_Rep2_downsampled.Tshift.fixed.tagmentpositions.bed", sep = "\t", header = F, stringsAsFactors = F)
 s24_combined_aggregate <- merge(s24_1_aggregate,s24_2_aggregate, by=c("V1","V2","V3"), all = T)
 s24_combined_aggregate[is.na(s24_combined_aggregate)] <-0
 s24_combined_aggregate$combined <- s24_combined_aggregate$V4.x+s24_combined_aggregate$V4.y 
 write.table(s24_combined_aggregate[,c(1,2,3,6)], "24hpf_pos_combined_downsampled.Tshift.fixed.tagmentpositions.bed", sep = "\t", col.names = F, row.names = F, quote = F)
 
+#############################################################################################################################################################################3
 
-#MACS2 call peak on downsampled files
+#MACS2 call peak on downsampled (35million) files
 macs2 callpeak -t "SAMPLE_Rep1_downsampled.Tshift.fixed.tagmentpositions.bed" -f BED -g 1.4e+9 -n "SAMPLE_Rep1_downsampled.Tshift.fixed.tagmentpositions.p01" -B --verbose 3 --SPMR --keep-dup all --nomodel -s 75 --extsize 73 --shift -37 -p .01 --outdir ../macs2
 
 # Sort by Col8 in descending order and replace long peak names in Column 4 with Peak_<peakRank>
@@ -297,7 +301,6 @@ for i in *.downsampled.Tshift.fixed.bed; do echo $i & bedtools intersect -u -a $
 #7948859/35016721*100 = 22.7%
 
 
-
 ### DiffBIND to call DARs (with IDR peaks and FDR 0.001) ("R analysis")###
 library(DiffBind)
 setwd("DiffBind/DiffBind_IDRpeaks")
@@ -440,7 +443,6 @@ DAR$s24vIri <- as.numeric(DAR$s24vIri)
 DAR$MelvIri <- as.numeric(DAR$MelvIri)
 
 DAR <- DAR[,c(2,3,4,1,9,5,6,7,8)]
-
 DAR <- DAR[!duplicated(DAR$chrompos),]
 write.table(DAR, "All_DiffBind_peaks_merged_wINFO.bed", row.names = F, col.names = F, sep = "\t",quote =F)
 DAR <- read.table("All_DiffBind_peaks_merged_wINFO.bed",header =F, sep = "\t", stringsAsFactors = F, quote = "")
