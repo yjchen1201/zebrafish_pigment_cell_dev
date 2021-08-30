@@ -1,0 +1,7 @@
+DMAR_type	DMAR_number	pct
+hypo_closing_DMAR	485	0.012
+hypo_opening_DMAR	4381	0.106
+solo_hyperDMR	440	0.011
+solo_hypoDMR	10697	0.258
+solo_openDAR	4246	0.103
+solo_closeDAR	21168	0.511
