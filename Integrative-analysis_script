@@ -1,3 +1,19 @@
+#cutadapt v1.10: Used to trim adapter reads 
+#samtools version 1.3.1: Used to sort and downsample bam files for downstream processing
+#bismark v0.16.1: Used to align WGBS reads to the genome and call CpG methylation
+#bwa v0.7.15: bwa-mem used to align ATAC-seq reads to the genome
+#macs2 v2.1.1: Used to call peaks for ATAC-seq
+#STAR v2.5.1b: Used to align RNA-sequencing data
+#stringtie v1.3.3: Used to annotate aligned reads and quantify transcripts. 
+#picard v2.8.1: Used to mark and remove duplicate reads
+#bedtools v2.27.1: closest, intersect, shuffle command used as specified in manuscript 
+#meme v5.0.3: Used AME command to find motif enrichment and FIMO command to scan for motif presence 
+#R v3.3.0: Used to analyze sequencing library results
+#DSS v2.14.0 :Used to call differentially methylated regions
+#DESeq2 v1.12.4: Used to call differentially expressed genes
+#DiffBind v 2.2.12: Used to call differentially accessible regions/peaks
+#Metascape v3.0: Used for GO enrichment analysis
+
 ################################ COMBINING WGBS METHYLATION DATA (d30) AND ATAC SEQ DATA (IDR DARs) ###################################################
 #Compare DMR size vs DAR size
 combined_DMR <- read.table("Combined_DMRs_d30_p0.01_wINFO.bed",sep = "\t", header = F,quote = "", stringsAsFactors = F)
@@ -10,35 +26,6 @@ a <-ggplot(d, aes(Size, fill = Type, colour = Type)) + geom_density(alpha = 0.5,
       labs(x = "Size (bp)", y = "Density")+scale_x_continuous(limits = c(0,2000))+scale_fill_manual(values = mypalette2[c(1,3)])+scale_color_manual(values=mypalette2[c(1,3)])+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))
 a
 
-#check overlap of combined DMRs vs DARs
-bedtools intersect -wo -a All_DiffBind_peaks_merged_wINFO.bed -b Combined_DMRs_d30_p0.01_wINFO.bed |wc -l
-#15882
-bedtools intersect -u -a All_DiffBind_peaks_merged_wINFO.bed -b Combined_DMRs_d30_p0.01_wINFO.bed |wc -l
-#15708 DARs overlap with DMRs
-bedtools intersect -u -b All_DiffBind_peaks_merged_wINFO.bed -a Combined_DMRs_d30_p0.01_wINFO.bed |wc -l
-#15425 DMRs overlap with DARs
-bedtools intersect -v -a All_DiffBind_peaks_merged_wINFO.bed -b Combined_DMRs_d30_p0.01_wINFO.bed |wc -l
-#39672 DARs not in DMRs
-bedtools intersect -v -b All_DiffBind_peaks_merged_wINFO.bed -a Combined_DMRs_d30_p0.01_wINFO.bed |wc -l
-#17466 DMRs not in DARs
-
-#make venn diagram 
-library("VennDiagram")
-dev.off()
-venn.plot <- draw.pairwise.venn(
-area1 = 55380,
-area2 = 33174,
-cross.area = 15708,
-category = c("Combined DARs", "Combined DMRs"),
-fill = c(mypalette[c(6,2)]),
-lty = "blank",
-cex = 2,
-cat.pos =c(-20,20),
-scaled = T,
-cat.cex = 2,
-cat.col = c(mypalette[c(6,2)])
-)
-
 #combine DMRs and DARs bed files to make a master list
 # combined DMRs and DARs
 cat Combined_DMRs_d30_p0.01_wINFO.bed All_DiffBind_peaks_merged_wINFO.bed >Combined_DMR_DAR.bed
@@ -46,8 +33,7 @@ cat Combined_DMRs_d30_p0.01_wINFO.bed All_DiffBind_peaks_merged_wINFO.bed >Combi
 sort -k1,1 -k2,2n Combined_DMR_DAR.bed > Combined_DMR_DAR.sorted.bed
 # merge regions
 bedtools merge -i Combined_DMR_DAR.sorted.bed > Combined_DMR_DAR.bed
-# count regions
-wc -l  Combined_DMR_DAR.bed # 72384
+
 
 rm Combined_DMR_DAR.sorted.bed
 
@@ -59,15 +45,15 @@ bedtools intersect -wao -a Combined_DMR_DAR.bed -b All_DiffBind_peaks_merged_wIN
 # Find in region peaks and count overlapps
 bedtools intersect -c -a Combined_DMR_DAR.bed -b 15somite_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > Combined_DMR_DAR_wIDRinfo_15s.txt
 bedtools intersect -c -a Combined_DMR_DAR.bed -b 24hpf_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > Combined_DMR_DAR_wIDRinfo_24hpf.txt
-bedtools intersect -c -a Combined_DMR_DAR.bed -b IDR_peaks_0.05/Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > Combined_DMR_DAR_wIDRinfo_Mel.txt
-bedtools intersect -c -a Combined_DMR_DAR.bed -b 】Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > Combined_DMR_DAR_wIDRinfo_Iri.txt
+bedtools intersect -c -a Combined_DMR_DAR.bed -b Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > Combined_DMR_DAR_wIDRinfo_Mel.txt
+bedtools intersect -c -a Combined_DMR_DAR.bed -b Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > Combined_DMR_DAR_wIDRinfo_Iri.txt
 
 #calculate average methylation of DMARs
 for i in "SAMPLE_Combined_DSS.txt"; do sed '1d' $i | awk 'BEGIN{OFS="\t"}{print $1,$2,$2,$3,$4,1}' > ${i/.txt/.bed};done
-bedtools intersect -wo -a Combined_DMR_DAR.bed -b /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/BS_only/15somite_NCC_Combined_DSS.bed > Combined_DMR_DAR_wMETH_15s.txt
-bedtools intersect -wo -a Combined_DMR_DAR.bed -b /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/BS_only/24hpf_NCC_Combined_DSS.bed > Combined_DMR_DAR_wMETH_24hpf.txt
-bedtools intersect -wo -a Combined_DMR_DAR.bed -b /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/BS_only/Mel_Combined_DSS.bed > Combined_DMR_DAR_wMETH_Mel.txt
-bedtools intersect -wo -a Combined_DMR_DAR.bed -b /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/BS_only/Iri_Combined_DSS.bed > Combined_DMR_DAR_wMETH_Iri.txt
+bedtools intersect -wo -a Combined_DMR_DAR.bed -b 15somite_NCC_Combined_DSS.bed > Combined_DMR_DAR_wMETH_15s.txt
+bedtools intersect -wo -a Combined_DMR_DAR.bed -b 24hpf_NCC_Combined_DSS.bed > Combined_DMR_DAR_wMETH_24hpf.txt
+bedtools intersect -wo -a Combined_DMR_DAR.bed -b Mel_Combined_DSS.bed > Combined_DMR_DAR_wMETH_Mel.txt
+bedtools intersect -wo -a Combined_DMR_DAR.bed -b Iri_Combined_DSS.bed > Combined_DMR_DAR_wMETH_Iri.txt
 
 # Pull out regions with methylation information from each samples
 DMAR_meth15<- read.table("Combined_DMR_DAR_wMETH_15s.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
@@ -459,7 +445,7 @@ DMAR$DARMelvIri <- DMAR$DARMelvIri*-1   ######### the directionality of DAR is s
 
 
 # export to a final bed file including all the DMAR information
-write.table(DMAR, "/scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/All_DMAR_Combined_wINFO_NEW_042620.bed", row.names = F, col.names = T, sep = "\t",quote =F)
+write.table(DMAR, "All_DMAR_Combined_wINFO_NEW_042620.bed", row.names = F, col.names = T, sep = "\t",quote =F)
 
 
 # Calculate the counts of differentially methylated and accessible regions
@@ -502,62 +488,6 @@ str(DMAR[DMAR$DMRs24vIri > 0 & DMAR$DARs24vIri < 0 & DMAR$DMRs24vMel <= 0 & DMAR
 str(DMAR[DMAR$DMRs24vIri > 0 & DMAR$DARs24vIri > 0 & DMAR$DMRs24vMel <= 0 & DMAR$DARs24vMel <= 0,]) #3095 Iri hypo opening
 
 
-#15 somite to 24 hpf ANALYSIS
-str(DMAR[DMAR$DMRs15vs24 != 0,]) #516 DMRs total
-
-str(DMAR[DMAR$DMRs15vs24>0,]) # 358 hypoDMRs
-str(DMAR[DMAR$DMRs15vs24>0 & DMAR$IDR_s15 >0,]) # 88 hypoDMRs with peaks already present in/near DMR in 15s
-str(DMAR[DMAR$DMRs15vs24>0 & DMAR$IDR_s24 >0,]) # 94 hypoDMRs with peaks already present in/near DMR in 24hpf
-str(DMAR[DMAR$DMRs15vs24>0 & DMAR$IDR_s24 == 0,]) #264 hypoDMRs with no peak in 24hpf
-str(DMAR[DMAR$DMRs15vs24>0 & DMAR$IDR_s15 == 0,]) #270 hypoDMRs with no peak in 15s
-str(DMAR[DMAR$DMRs15vs24>0 & DMAR$IDR_s15 == 0 & DMAR$IDR_s24 == 0,]) #260 hypoDMRs with no peak in 15somite & 24hpf
-str(DMAR[DMAR$DMRs15vs24>0 & DMAR$IDR_s15 == 0 & DMAR$IDR_s24 == 0 & DMAR$IDR_M >0,]) #1
-str(DMAR[DMAR$DMRs15vs24>0 & DMAR$IDR_s15 == 0 & DMAR$IDR_s24 == 0 & DMAR$IDR_I >0,]) #3
-str(DMAR[DMAR$DMRs15vs24>0 & DMAR$IDR_s15 == 0 & DMAR$IDR_s24 == 0 & DMAR$IDR_M ==0,]) #259
-str(DMAR[DMAR$DMRs15vs24>0 & DMAR$IDR_s15 == 0 & DMAR$IDR_s24 == 0 & DMAR$IDR_I ==0,]) #257
-str(DMAR[DMAR$DMRs15vs24>0 & DMAR$IDR_s15 == 0 & DMAR$IDR_s24 == 0 & DMAR$IDR_M ==0 & DMAR$IDR_I ==0,]) #256
-
-str(DMAR[DMAR$DMRs15vs24<0,]) # 158 hyperDMRs
-str(DMAR[DMAR$DMRs15vs24<0 & DMAR$IDR_s15 >0,]) # 9 hyperDMRs with peaks already present in/near DMR in 15s
-str(DMAR[DMAR$DMRs15vs24<0 & DMAR$IDR_s24 >0,]) # 7 hyperDMRs with peaks already present in/near DMR in 24hpf
-str(DMAR[DMAR$DMRs15vs24<0 & DMAR$IDR_s24 == 0,]) #151 hyperDMRs with no peak in 24hpf
-str(DMAR[DMAR$DMRs15vs24<0 & DMAR$IDR_s15 == 0,]) #149 hyperDMRs with no peak in 15s
-str(DMAR[DMAR$DMRs15vs24<0 & DMAR$IDR_s15 == 0 & DMAR$IDR_s24 == 0,]) #149 hyperDMRs with no peak in 15somite & 24hpf
-str(DMAR[DMAR$DMRs15vs24<0 & DMAR$IDR_s15 == 0 & DMAR$IDR_s24 == 0 & DMAR$IDR_M >0,]) #0
-str(DMAR[DMAR$DMRs15vs24<0 & DMAR$IDR_s15 == 0 & DMAR$IDR_s24 == 0 & DMAR$IDR_I >0,]) #1
-str(DMAR[DMAR$DMRs15vs24<0 & DMAR$IDR_s15 == 0 & DMAR$IDR_s24 == 0 & DMAR$IDR_M ==0,]) #149
-str(DMAR[DMAR$DMRs15vs24<0 & DMAR$IDR_s15 == 0 & DMAR$IDR_s24 == 0 & DMAR$IDR_I ==0,]) #148
-str(DMAR[DMAR$DMRs15vs24<0 & DMAR$IDR_s15 == 0 & DMAR$IDR_s24 == 0 & DMAR$IDR_M ==0 & DMAR$IDR_I ==0,]) #148
-
-##make plot for 15s DMR
-str(DMAR[DMAR$DMRs15vs24>0,])
-
-str(DMAR[DMAR$DARs15vs24!=0,]) #891 DARs
-
-str(DMAR[DMAR$DARs15vs24>0,]) #883 opening DARs
-str(DMAR[DMAR$DARs15vs24>0 & DMAR$DMRs15vs24>0,]) #6 hypo-opening DMAR
-str(DMAR[DMAR$DARs15vs24>0 & DMAR$DMRs15vs24<0,]) #0
-str(DMAR[DMAR$DARs15vs24>0 & DMAR$Meth_s15 <50 & DMAR$aveCpGcount > 0,]) #38 DAR with 50% or less methylation in 15somite
-str(DMAR[DMAR$DARs15vs24>0 & DMAR$Meth_s24 <50 & DMAR$aveCpGcount > 0,]) #48 DAR with 50% or less methylation in 24hpf
-str(DMAR[DMAR$DARs15vs24>0 & DMAR$Meth_s15 >50 & DMAR$aveCpGcount > 0,]) #838 DAR with 50% or more methylation in 15somite
-str(DMAR[DMAR$DARs15vs24>0 & DMAR$Meth_s24 >50 & DMAR$aveCpGcount > 0,]) #829 DAR with 50% or more methylation in 24hpf
-str(DMAR[DMAR$DARs15vs24>0 & DMAR$Meth_s15 >50 & DMAR$Meth_s24 >50 & DMAR$aveCpGcount > 0,]) #826 DAR with 50% or more methylation in 15somite and 24hpf
-str(DMAR[DMAR$DARs15vs24>0 & DMAR$Meth_s15 >50 & DMAR$Meth_s24 >50 & DMAR$aveCpGcount > 0 & DMAR$Meth_Mel >50 &  DMAR$Meth_Iri >50,]) #238 DAR with 50% or more methylation in all 4 ***
-str(DMAR[DMAR$DARs15vs24>0 & DMAR$Meth_s15 >50 & DMAR$aveCpGcount > 0 & DMAR$Meth_Mel <50 &  DMAR$Meth_Iri <50,]) #455 DAR with 50% <50% in Pigment
-
-str(DMAR[DMAR$DARs15vs24>0 & DMAR$Meth_s15 >50 & DMAR$Meth_s24 >50 & DMAR$aveCpGcount > 0 & DMAR$Meth_Mel <50 &  DMAR$Meth_Iri <50,]) #443 DAR with 50% or more methylation in NCC but <50% in Pigment
-str(DMAR[DMAR$DARs15vs24>0 & DMAR$Meth_s15 >50 & DMAR$Meth_s24 >50 & DMAR$aveCpGcount > 0 & DMAR$Meth_Mel <50,]) #497 DAR with 50% or more methylation in NCC but <50% in Mel
-str(DMAR[DMAR$DARs15vs24>0 & DMAR$Meth_s15 >50 & DMAR$Meth_s24 >50 & DMAR$aveCpGcount > 0 & DMAR$Meth_Iri <50,]) #534 DAR with 50% or more methylation in NCC but <50% in Iri
-
-str(DMAR[DMAR$DARs15vs24<0,]) #8 closing DARs
-str(DMAR[DMAR$DARs15vs24<0 & DMAR$DMRs15vs24>0,]) #0 hypo-opening DMAR
-str(DMAR[DMAR$DARs15vs24<0 & DMAR$DMRs15vs24<0,]) #0
-str(DMAR[DMAR$DARs15vs24<0 & DMAR$Meth_s15 <50 & DMAR$aveCpGcount > 0,]) #38 DAR with 50% or less methylation in 15somite
-str(DMAR[DMAR$DARs15vs24<0 & DMAR$Meth_s24 <50 & DMAR$aveCpGcount > 0,]) #48 DAR with 50% or less methylation in 24hpf
-str(DMAR[DMAR$DARs15vs24<0 & DMAR$Meth_s15 >50 & DMAR$aveCpGcount > 0,]) #838 DAR with 50% or more methylation in 15somite
-str(DMAR[DMAR$DARs15vs24<0 & DMAR$Meth_s24 >50 & DMAR$aveCpGcount > 0,]) #829 DAR with 50% or more methylation in 24hpf
-
-
 #manual order of rows in heatmap
 row1 <- DMAR[DMAR$DARs15vs24>0 & DMAR$Meth_s15 >50 & DMAR$Meth_s24 >50 & DMAR$aveCpGcount > 0 & DMAR$Meth_Mel >50 &  DMAR$Meth_Iri >50,]
 row1$combineMI <- (row1$Meth_Mel+ row1$Meth_I)/2
@@ -589,62 +519,6 @@ colnames(df.OG2) <- c("15somite", "24hpf","Mel", "Iri")
 
 ht4 = Heatmap(df.OG2[roworder2,], column_title = "Methylation of 15somite to 24hpf DARs",name= "Methylaton",col = colorRamp2(c(0, 50, 100), c("#0392cf", "#fdf498","#ee4035")), cluster_rows=FALSE, cluster_columns = FALSE,show_row_names = FALSE)
 ht4
-
-
-###Change FPKM into Z score###
-
-zscore<- function(x){
-    z<- (x - mean(x)) / sd(x)
-    return(z)
-}
-
-# read the output from stringtie of each sample/replicate
-s15_R1 <- read.table("15somite_Rep1_RNA_R1_trimmed.Aligned.sortedByCoord.out.sorted.gene.abundance.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
-s15_R2 <- read.table("15somite_Rep2_RNA_R1_trimmed.Aligned.sortedByCoord.out.gene.abundance.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
-s24_R1 <- read.table("24GFP_Rep1_R1_trimmed.Aligned.sortedByCoord.out.sorted.gene.abundance.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
-s24_R2 <- read.table("24GFP_Rep2_R1_trimmed.Aligned.sortedByCoord.out.sorted.gene.abundance.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
-Mel_R1 <- read.table("Mel_Rep1_RNA_R1_trimmedAligned.sortedByCoord.out.gene.abundance.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
-Mel_R2 <- read.table("Mel_Rep2_RNA_R1_trimmedAligned.sortedByCoord.out.gene.abundance.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
-Iri_R2 <- read.table("Iri_Rep1_RNA_R1.trimmed.Aligned.sortedByCoord.out.gene.abundance.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
-Iri_R1 <- read.table("Iri_Rep2_RNA_R1.trimmed.Aligned.sortedByCoord.out.gene.abundance.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
-
-geneFPKM<-Reduce(function(x, y) merge(x, y,by = "V5",all.x = T), list(s15_R1[,c(5,8)],s15_R2[,c(5,8)], s24_R1[,c(5,8)],s24_R2[,c(5,8)],Mel_R1[,c(5,8)],Mel_R2[,c(5,8)], Iri_R1[,c(5,8)],Iri_R2[,c(5,8)]))
-colnames(geneFPKM) <- c("gene","s15_Rep1","s15_Rep2","s24_Rep1","s24_Rep2","Mel_Rep1","Mel_Rep2","Iri_Rep1","Iri_Rep2")
-geneFPKM <- geneFPKM[!duplicated(geneFPKM$gene),]
-geneFPKM$s15 <- (geneFPKM$s15_Rep1+geneFPKM$s15_Rep2)/2
-geneFPKM$s24 <- (geneFPKM$s24_Rep1+geneFPKM$s24_Rep2)/2
-geneFPKM$Mel <- (geneFPKM$Mel_Rep1+geneFPKM$Mel_Rep2)/2
-geneFPKM$Iri <- (geneFPKM$Iri_Rep1+geneFPKM$Iri_Rep2)/2
-for (i in names(geneFPKM[,c(2,3,4,5,6,7,8,9)])) 
-{
-      geneFPKM[paste(i,"_zscore",sep = "")] <- zscore(geneFPKM[[i]])    
-}
-
-
-
-DEG2 <- read.table("DEGs_combined_samples_p0.01_wTFinfo.txt",header = T, ,quote = "", sep = "\t",stringsAsFactors = F) 
-DEG2_Z<-merge(DEG2,geneFPKM,by = "gene", all.x =T)##ALL GENES
-
-write.table(DEG2_Z,"DEG_FPKM_Zscore_p0.01.txt",col.names = T, row.names = F,quote = F, sep = "\t")
-DEG2_Z<-DEG2_Z[DEG2_Z$s15 > 5 | DEG2_Z$s24 > 5 |DEG2_Z$Mel > 5 |DEG2_Z$Iri > 5,]
-write.table(DEG2_Z,"/scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/RNA_only/DESeq2_051718/DEG_FPKM_Zscore_p0.01_RPKMfilter5.txt",col.names = T, row.names = F,quote = F, sep = "\t")
-
-PigmentDEG <- DEG2_Z[DEG2_Z$s24vIri_log2_change >0,c(1,20:27)]
-name <- PigmentDEG[,1]
-df.OG2 <- PigmentDEG[,c(2:9)]
-row.names(df.OG2) <- name
-colnames(df.OG2) <- c("15s_1","15s_2","24hpf_1","24hpf_2","Mel_1","Mel_2","Iri_1","Iri_2")
-ht2 = Heatmap(df.OG2, column_title = "Pigment DEGs",name= "Z-score",col = colorRamp2(c(-0.5, 0, 0.5), c("#0392cf", "#fdf498","#ee4035")), cluster_rows = TRUE, cluster_columns = FALSE,show_row_names = FALSE)
-ht2
-
-
-PigmentDEG <- DEG2_Z[DEG2_Z$MelvIri_log2_change >0,c(1,12:19)]
-name <- PigmentDEG[,1]
-df.OG2 <- PigmentDEG[,c(2:9)]
-row.names(df.OG2) <- name
-colnames(df.OG2) <- c("15s_1","15s_2","24hpf_1","24hpf_2","Mel_1","Mel_2","Iri_1","Iri_2")
-ht3 = Heatmap(df.OG2, column_title = "Pigment DEGs",name= "Z-score",col = colorRamp2(c(-0.5, 0 ,0.5), c("#0392cf", "#fdf498","#ee4035")), cluster_rows = TRUE, cluster_columns = FALSE,show_row_names = FALSE)
-ht3
 
 
 
@@ -897,9 +771,7 @@ Shared_openDMAR_AME_genename_DEG[Shared_openDMAR_AME_genename_DEG$pvalue_log == 
 
 
 #Iri open AME motif figure
-Iri_hypoDMR_AME_filtered <-Iri_hypoDMR_AME_genename_DEG[Iri_hypoDMR_AME_genename_DEG$s24vIri_log2_change <0 | Iri_hypoDMR_AME_genename_DEG$MelvIri_log2_change <0 & Iri_hypoDMR_AME_genename_DEG$Iri > 5,c("genename.x","pvalue_log","DBD","s24vMel_log2_change","s24vIri_log2_change","MelvIri_log2_change","s24","Mel","Iri")] #upreg in iri **Use this
-Iri_openDAR_AME_filtered <-Iri_openDAR_AME_genename_DEG[Iri_openDAR_AME_genename_DEG$s24vIri_log2_change <0 | Iri_openDAR_AME_genename_DEG$MelvIri_log2_change <0 & Iri_openDAR_AME_genename_DEG$Iri > 5,c("genename.x","pvalue_log","DBD","s24vMel_log2_change","s24vIri_log2_change","MelvIri_log2_change","s24","Mel","Iri"),] #upreg in iri 
-Iri_openDMAR_AME_filtered <-Iri_openDMAR_AME_genename_DEG[Iri_openDMAR_AME_genename_DEG$s24vIri_log2_change <0 | Iri_openDMAR_AME_genename_DEG$MelvIri_log2_change <0 & Iri_openDMAR_AME_genename_DEG$Iri > 5,c("genename.x","pvalue_log","DBD","s24vMel_log2_change","s24vIri_log2_change","MelvIri_log2_change","s24","Mel","Iri"),] #upreg in iri 
+Iri_hypoDMR_AME_filtered <-Iri_hypoDMR_AME_genename_DEG[Iri_hypoDMR_AME_genename_DEG$s24vIri_log2_change <0 | Iri_hypoDMR_AME_genename_DEG$MelvIri_log2_change <0 & Iri_hypoDMR_AME_genename_DEG$Iri > 5,c("genename.x","pvalue_log","DBD","s24vMel_log2_change","s24vIri_log2_change","MelvIri_log2_change","s24","Mel","Iri")] #upreg in iri 
 
 Iri_AME_masterlist <- unique(rbind(Iri_hypoDMR_AME_filtered[,c(1,3,4,5,6,7,8,9)],Iri_openDAR_AME_filtered[,c(1,3,4,5,6,7,8,9)],Iri_openDMAR_AME_filtered[,c(1,3,4,5,6,7,8,9)]))
 
@@ -1557,7 +1429,7 @@ prom_DMAR[prom_DMAR =="."] <- 0
 DEG2_genenames<- read.table("<path DESeq2_051718/DEG_p0.01_ENSEMBL_to_Gene_Name.txt",header = T, ,quote = "", sep = "\t",stringsAsFactors = F) #from BioMart
 colnames(DEG2_genenames) <- c("gene","genename")
 DEG3 <- merge(DEG2,DEG2_genenames, by = "gene", all.x = T)
-DEG4<-merge(geneFPKM, DEG3,by = "gene", all.x =T)##ALL GENES
+DEG4<-merge(geneTPM, DEG3,by = "gene", all.x =T)##ALL GENES
 DEG4[is.na(DEG4)] <-0
 DEG4<-DEG4[DEG4$s15 > 5 | DEG4$s24 > 5 |DEG4$Mel > 5 |DEG4$Iri > 5,] #filter genes with at least 5 rpkm
 
@@ -2106,116 +1978,6 @@ b <-ggplot(df_mel[df_mel$DMAR != ".",], aes(x=Type,y=as.numeric(DMAR)))+ geom_vi
 b
 
 
-#USE metascape to identify GOs
-#Combined top 3 PPI MCODE cluster per motif: 
-PPI <- read.table("Combined_analysis/FIMO_motif_scan/Metascape_PPI_top3_for_R.txt", sep = "\t", quote = "", header =F, stringsAsFactors = F)
-colnames(PPI) <- c("MCODE_cluster","GOterm","Info","log_pval","Motif","Type")
-PPI$Info <- gsub('\\"',"",PPI$Info)
-PPI$log_pval <- -PPI$log_pval
-unique(PPI$Type)
-#[1] "Small_molecule"    "vesicle_transport" "vesicle"           "ligand_signaling"  "immune"           
-#[6] "others"            "metabolism"        "response"          "platelets"  
-PPI_small <- PPI[PPI$Type == "Small_molecule",]
-PPI_vesicle <- PPI[PPI$Type == "vesicle",]
-PPI_vesicleT <- PPI[PPI$Type == "vesicle_transport",]
-PPI_ligand <- PPI[PPI$Type == "ligand_signaling",]
-PPI_metabolism <- PPI[PPI$Type == "metabolism",]
-PPI_response <- PPI[PPI$Type == "response",]
-PPI_immune <- PPI[PPI$Type == "immune",]
-PPI_platelets <- PPI[PPI$Type == "platelets",]
-PPI_others <- PPI[PPI$Type == "others",]
-
-PPI_ordered<-unique(c(PPI_small[order(PPI_small$Info),]$Info,PPI_vesicle[order(PPI_vesicle$Info),]$Info,PPI_vesicleT[order(PPI_vesicleT$Info),]$Info,PPI_metabolism[order(PPI_metabolism$Info),]$Info,PPI_response[order(PPI_response$Info),]$Info,PPI_immune[order(PPI_immune$Info),]$Info,PPI_platelets[order(PPI_platelets$Info),]$Info,PPI_others[order(PPI_others$Info),]$Info))
-PPI_info <- data.frame(PPI_ordered)
-colnames(PPI_info) <- "Info"
-PPI_reformat <- Reduce(function(x, y) merge(x, y, by=c("Info"),all.x = T), list(PPI_info,PPI[PPI$Motif == "ALX1",c(3,4)],PPI[PPI$Motif == "ALX3",c(3,4)],PPI[PPI$Motif == "ALX4",c(3,4)],PPI[PPI$Motif == "BHLHE41",c(3,4)],PPI[PPI$Motif == "ETS1",c(3,4)],PPI[PPI$Motif == "GBX2",c(3,4)],PPI[PPI$Motif == "JUNB",c(3,4)],PPI[PPI$Motif == "NR4A1",c(3,4)],PPI[PPI$Motif == "PAX7",c(3,4)],PPI[PPI$Motif == "SOX10",c(3,4)],PPI[PPI$Motif == "SOX9",c(3,4)],PPI[PPI$Motif == "SP3",c(3,4)],PPI[PPI$Motif == "TFAP2",c(3,4)],PPI[PPI$Motif == "TFEC",c(3,4)]))
-colnames(PPI_reformat) <- c("Info","ALX1","ALX3","ALX4", "BHLHE41","ETS1","GBX2","JUNB","NR4A1","PAX7","SOX10","SOX9","SP3","TFAP2","TFEC")
-PPI_reformat[is.na(PPI_reformat)] <-0
-PPI_reformat <- PPI_reformat[!duplicated(PPI_reformat$Info),]
-PPI_reformat$Info <- factor(PPI_reformat$Info, levels = PPI_ordered)
-
-name <- PPI_reformat[,1]
-df.OG2 <- PPI_reformat[,c(2:15)] #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(PPI_reformat[,c(2:15)])
-ht2 = Heatmap(df.OG2, column_title = "DEGS near Motif Regions (<100 kb)\nMCODE GO enrichment in PPI",name= "-log(p-value)",col = colorRamp2(c(0, 5, 10), c("#fffef2","#ffb0b0","#800000")), row_names_side = "left",row_names_max_width = unit(20, "cm"),
-    cluster_rows = F, cluster_columns = T,show_row_names = T,row_order = PPI_ordered, clustering_method_columns= "ward.D2")
-ht2
-
-
-PPI_ordered<-unique(c(PPI_small[order(PPI_small$Info),]$Info))
-PPI_info <- data.frame(PPI_ordered)
-colnames(PPI_info) <- "Info"
-PPI_reformat <- Reduce(function(x, y) merge(x, y, by=c("Info"),all.x = T), list(PPI_info,PPI_small[PPI_small$Motif == "ALX1",c(3,4)],PPI_small[PPI_small$Motif == "ALX3",c(3,4)],PPI_small[PPI_small$Motif == "ALX4",c(3,4)],PPI_small[PPI_small$Motif == "BHLHE41",c(3,4)],PPI_small[PPI_small$Motif == "ETS1",c(3,4)],PPI_small[PPI_small$Motif == "GBX2",c(3,4)],PPI_small[PPI_small$Motif == "JUNB",c(3,4)],PPI_small[PPI_small$Motif == "NR4A1",c(3,4)],PPI_small[PPI_small$Motif == "PAX7",c(3,4)],PPI_small[PPI_small$Motif == "SOX10",c(3,4)],PPI_small[PPI_small$Motif == "SOX9",c(3,4)],PPI_small[PPI_small$Motif == "SP3",c(3,4)],PPI_small[PPI_small$Motif == "TFAP2",c(3,4)],PPI_small[PPI_small$Motif == "TFEC",c(3,4)]))
-colnames(PPI_reformat) <- c("Info","ALX1","ALX3","ALX4", "BHLHE41","ETS1","GBX2","JUNB","NR4A1","PAX7","SOX10","SOX9","SP3","TFAP2","TFEC")
-PPI_reformat[is.na(PPI_reformat)] <-0
-PPI_reformat <- PPI_reformat[!duplicated(PPI_reformat$Info),]
-PPI_reformat$Info <- factor(PPI_reformat$Info, levels = PPI_ordered)
-
-name <- PPI_reformat[,1]
-df.OG2 <- PPI_reformat[,c(2:15)] #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(PPI_reformat[,c(2:15)])
-ht2 = Heatmap(df.OG2, column_title = "DEGS near Motif Regions (<100 kb)\nMCODE Small Molecules group",name= "-log(p-value)",col = colorRamp2(c(0, 5, 10), c("#fffef2","#ffb0b0","#800000")), row_names_side = "left",row_names_max_width = unit(20, "cm"),
-    cluster_rows = T, cluster_columns = T,show_row_names = T,row_order = PPI_ordered, clustering_method_columns= "ward.D2",clustering_method_rows= "ward.D2",row_dend_side = c("right"),)
-ht2
-
-
-PPI_ordered<-unique(c(PPI_vesicle[order(PPI_vesicle$Info),]$Info,PPI_vesicleT[order(PPI_vesicleT$Info),]$Info))
-PPI_info <- data.frame(PPI_ordered)
-colnames(PPI_info) <- "Info"
-PPI_reformat <- Reduce(function(x, y) merge(x, y, by=c("Info"),all.x = T), list(PPI_info,PPI[PPI$Motif == "ALX1",c(3,4)],PPI[PPI$Motif == "ALX3",c(3,4)],PPI[PPI$Motif == "ALX4",c(3,4)],PPI[PPI$Motif == "BHLHE41",c(3,4)],PPI[PPI$Motif == "ETS1",c(3,4)],PPI[PPI$Motif == "GBX2",c(3,4)],PPI[PPI$Motif == "JUNB",c(3,4)],PPI[PPI$Motif == "NR4A1",c(3,4)],PPI[PPI$Motif == "PAX7",c(3,4)],PPI[PPI$Motif == "SOX10",c(3,4)],PPI[PPI$Motif == "SOX9",c(3,4)],PPI[PPI$Motif == "SP3",c(3,4)],PPI[PPI$Motif == "TFAP2",c(3,4)],PPI[PPI$Motif == "TFEC",c(3,4)]))
-colnames(PPI_reformat) <- c("Info","ALX1","ALX3","ALX4", "BHLHE41","ETS1","GBX2","JUNB","NR4A1","PAX7","SOX10","SOX9","SP3","TFAP2","TFEC")
-PPI_reformat[is.na(PPI_reformat)] <-0
-PPI_reformat <- PPI_reformat[!duplicated(PPI_reformat$Info),]
-PPI_reformat$Info <- factor(PPI_reformat$Info, levels = PPI_ordered)
-
-name <- PPI_reformat[,1]
-df.OG2 <- PPI_reformat[,c(2:15)] #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(PPI_reformat[,c(2:15)])
-ht2 = Heatmap(df.OG2, column_title = "DEGS near Motif Regions (<100 kb)\nMCODE Vesicles group",name= "-log(p-value)",col = colorRamp2(c(0, 5, 10), c("#fffef2","#ffb0b0","#800000")), row_names_side = "left",row_names_max_width = unit(20, "cm"),
-    cluster_rows = T, cluster_columns = T,show_row_names = T,row_order = PPI_ordered, clustering_method_columns= "ward.D2",clustering_method_rows= "ward.D2",row_dend_side = c("right"),)
-ht2
-
-
-PPI_ordered<-unique(c(PPI_ligand[order(PPI_ligand$Info),]$Info,PPI_metabolism[order(PPI_metabolism$Info),]$Info,PPI_response[order(PPI_response$Info),]$Info))
-PPI_info <- data.frame(PPI_ordered)
-colnames(PPI_info) <- "Info"
-PPI_reformat <- Reduce(function(x, y) merge(x, y, by=c("Info"),all.x = T), list(PPI_info,PPI[PPI$Motif == "ALX1",c(3,4)],PPI[PPI$Motif == "ALX3",c(3,4)],PPI[PPI$Motif == "ALX4",c(3,4)],PPI[PPI$Motif == "BHLHE41",c(3,4)],PPI[PPI$Motif == "ETS1",c(3,4)],PPI[PPI$Motif == "GBX2",c(3,4)],PPI[PPI$Motif == "JUNB",c(3,4)],PPI[PPI$Motif == "NR4A1",c(3,4)],PPI[PPI$Motif == "PAX7",c(3,4)],PPI[PPI$Motif == "SOX10",c(3,4)],PPI[PPI$Motif == "SOX9",c(3,4)],PPI[PPI$Motif == "SP3",c(3,4)],PPI[PPI$Motif == "TFAP2",c(3,4)],PPI[PPI$Motif == "TFEC",c(3,4)]))
-colnames(PPI_reformat) <- c("Info","ALX1","ALX3","ALX4", "BHLHE41","ETS1","GBX2","JUNB","NR4A1","PAX7","SOX10","SOX9","SP3","TFAP2","TFEC")
-PPI_reformat[is.na(PPI_reformat)] <-0
-PPI_reformat <- PPI_reformat[!duplicated(PPI_reformat$Info),]
-PPI_reformat$Info <- factor(PPI_reformat$Info, levels = PPI_ordered)
-
-name <- PPI_reformat[,1]
-df.OG2 <- PPI_reformat[,c(2:15)] #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(PPI_reformat[,c(2:15)])
-ht2 = Heatmap(df.OG2, column_title = "DEGS near Motif Regions (<100 kb)\nMCODE Metabolism/Response group",name= "-log(p-value)",col = colorRamp2(c(0, 5, 10), c("#fffef2","#ffb0b0","#800000")), row_names_side = "left",row_names_max_width = unit(20, "cm"),
-    cluster_rows = T, cluster_columns = T,show_row_names = T,row_order = PPI_ordered, clustering_method_columns= "ward.D2",clustering_method_rows= "ward.D2",row_dend_side = c("right"),)
-ht2
-
-
-PPI_ordered<-unique(c(PPI_immune[order(PPI_immune$Info),]$Info,PPI_platelets[order(PPI_platelets$Info),]$Info))
-PPI_info <- data.frame(PPI_ordered)
-colnames(PPI_info) <- "Info"
-PPI_reformat <- Reduce(function(x, y) merge(x, y, by=c("Info"),all.x = T), list(PPI_info,PPI[PPI$Motif == "ALX1",c(3,4)],PPI[PPI$Motif == "ALX3",c(3,4)],PPI[PPI$Motif == "ALX4",c(3,4)],PPI[PPI$Motif == "BHLHE41",c(3,4)],PPI[PPI$Motif == "ETS1",c(3,4)],PPI[PPI$Motif == "GBX2",c(3,4)],PPI[PPI$Motif == "JUNB",c(3,4)],PPI[PPI$Motif == "NR4A1",c(3,4)],PPI[PPI$Motif == "PAX7",c(3,4)],PPI[PPI$Motif == "SOX10",c(3,4)],PPI[PPI$Motif == "SOX9",c(3,4)],PPI[PPI$Motif == "SP3",c(3,4)],PPI[PPI$Motif == "TFAP2",c(3,4)],PPI[PPI$Motif == "TFEC",c(3,4)]))
-colnames(PPI_reformat) <- c("Info","ALX1","ALX3","ALX4", "BHLHE41","ETS1","GBX2","JUNB","NR4A1","PAX7","SOX10","SOX9","SP3","TFAP2","TFEC")
-PPI_reformat[is.na(PPI_reformat)] <-0
-PPI_reformat <- PPI_reformat[!duplicated(PPI_reformat$Info),]
-PPI_reformat$Info <- factor(PPI_reformat$Info, levels = PPI_ordered)
-
-name <- PPI_reformat[,1]
-df.OG2 <- PPI_reformat[,c(2:15)] #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(PPI_reformat[,c(2:15)])
-ht2 = Heatmap(df.OG2, column_title = "DEGS near Motif Regions (<100 kb)\nMCODE Immune/platelets group",name= "-log(p-value)",col = colorRamp2(c(0, 5, 10), c("#fffef2","#ffb0b0","#800000")), row_names_side = "left",row_names_max_width = unit(20, "cm"),
-    cluster_rows = T, cluster_columns = T,show_row_names = T,row_order = PPI_ordered, clustering_method_columns= "ward.D2",clustering_method_rows= "ward.D2",row_dend_side = c("right"),)
-ht2
-
-
-
 
 
 
@@ -2227,10 +1989,10 @@ write.table(Iri_DEG_50kb_DMAR_FIMO_purine[,c(6:8)],"Iri_DEG_50kb_DMAR_FIMO_purin
 
 for i in *_forHomer.bed ; do findMotifsGenome.pl $i danRer10 ./HOMER/${i/.bed/.HOMER} -size given;done ###mostly tfec comes out as enrichment
 
-####Add annotation, type and DEG and RPKM for GO terms 50kb
+####Add annotation, type and DEG and Gene for GO terms 50kb
 Iri_DEG_50kb_DMAR_FIMO_guanine_wMotif <- merge(Iri_DEG_50kb_DMAR_FIMO_guanine[Iri_DEG_50kb_DMAR_FIMO_guanine$ALX1 > 0 | Iri_DEG_50kb_DMAR_FIMO_guanine$ALX3 > 0 |Iri_DEG_50kb_DMAR_FIMO_guanine$ALX4 > 0 |Iri_DEG_50kb_DMAR_FIMO_guanine$GBX2 > 0 |Iri_DEG_50kb_DMAR_FIMO_guanine$SOX10 > 0 |Iri_DEG_50kb_DMAR_FIMO_guanine$ETS1 > 0 |Iri_DEG_50kb_DMAR_FIMO_guanine$TFEC > 0,],DEG3[,c(1:15)], by ="gene",all.x=T)
 
-name <- make.uni////////////////////////////que(Iri_DEG_50kb_DMAR_FIMO_guanine_wMotif[,9])
+name <- make.unique(Iri_DEG_50kb_DMAR_FIMO_guanine_wMotif[,9])
 df.OG2 <- Iri_DEG_50kb_DMAR_FIMO_guanine_wMotif[,c(38,39,40,41,44,46,49)] #Motif occurrence
 row.names(df.OG2) <- name
 colnames(df.OG2) <- colnames(Iri_DEG_50kb_DMAR_FIMO_guanine_wMotif[,c(38,39,40,41,44,46,49)])
@@ -2615,9 +2377,7 @@ mkdir -p $motif
 fimo --max-stored-scores 10000000 --motif $motif --text --thresh 1e-5 --verbosity 4 $db $genome >$txt 2>$log
 
 
-#make FIMO for Alx3, Alx3_meth, Alx4_meth
-fimo --max-stored-scores 10000000 --text --motif JJ0001.1 --thresh 1e-5 --verbosity 4 Alx3_meth_FIMO.meme /bar/genomes/danRer10/danRer10.fa >Alx3_meth.danRer10.fimo.txt 2>Alx3_meth.danRer10.fimo.log
-fimo --max-stored-scores 10000000 --text --motif JJ0002.1 --thresh 1e-5 --verbosity 4 Alx4_meth_FIMO.meme /bar/genomes/danRer10/danRer10.fa >Alx4_meth.danRer10.fimo.txt 2>Alx4_meth.danRer10.fimo.log
+#make FIMO for Alx3,
 fimo --max-stored-scores 10000000 --text --motif PH0001.1 --thresh 1e-5 --verbosity 4 Alx3_FIMO.meme /bar/genomes/danRer10/danRer10.fa >Alx3.danRer10.fimo.txt 2>Alx3.danRer10.fimo.log
 
 awk -v OFS="\t" '{print $2,$3,$4,$5,$6,$7,$8,$9}' Alx3.danRer10.fimo.txt > Alx3.danRer10.fimo2.txt #make sure to remove the first column!
@@ -2732,746 +2492,604 @@ awk 'BEGIN{ORS=""} {for(i=NF;i>0;i--) {print $i; if (i==1) print "\n"; else prin
 rm ${motif}/${motif}_sites_centipedeX_ATAC_Iri.for.txt ${motif}/${motif}_sites_centipedeX_ATAC_Iri.rev.txt
 ./fitCentipede2.R $X_sp7ne0dpa $Y ${motif}/${motif}_sites_ATAC_Iri &>${motif}/fitCentipede.R.${motif}_Iri.log
 
-#CALL motifs with strong centipede postPr score (>0.95)#
-gunzip /Combined_analysis/centipede_motif_footprint/centipede_output/Alx1_DBD_2/Alx1_DBD_2_sites_ATAC_Iri_PostPr.txt.gz
-gunzip /Combined_analysis/centipede_motif_footprint/centipede_output/ALX3_full_2/ALX3_full_2_sites_ATAC_Iri_PostPr.txt.gz
-gunzip /Combined_analysis/centipede_motif_footprint/centipede_output/ALX4_DBD/ALX4_DBD_sites_ATAC_Iri_PostPr.txt.gz
-gunzip /Combined_analysis/centipede_motif_footprint/centipede_output/GBX2_DBD_2/GBX2_DBD_2_sites_ATAC_Iri_PostPr.txt.gz
-gunzip /Combined_analysis/centipede_motif_footprint/centipede_output/ETS1_DBD_1/ETS1_DBD_1_sites_ATAC_Iri_PostPr.txt.gz
-gunzip /Combined_analysis/centipede_motif_footprint/centipede_output/TFEC_DBD/TFEC_DBD_sites_ATAC_Iri_PostPr.txt.gz
-gunzip /Combined_analysis/centipede_motif_footprint/centipede_output/MA0442.2/MA0442.2_sites_ATAC_Iri_PostPr.txt.gz #sox10
-gunzip /Combined_analysis/centipede_motif_footprint/centipede_output/MA0620.2/MA0620.2_sites_ATAC_Iri_PostPr.txt.gz #mitf
-gunzip /Combined_analysis/centipede_motif_footprint/centipede_output/MA0041.1/MA0041.1_sites_ATAC_Iri_PostPr.txt.gz #foxd3
-
-
-
-
-
-
-awk 'BEGIN{OFS="\t"} $7>0.95 {print $0}' Combined_analysis/centipede_motif_footprint/centipede_output/Alx1_DBD_2/Alx1_DBD_2_sites_ATAC_Iri_PostPr.txt > Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/Alx1_DBD_2_sites_ATAC_Iri_PostPr_0.95.txt
-awk 'BEGIN{OFS="\t"} $7>0.95 {print $0}' Combined_analysis/centipede_motif_footprint/centipede_output/ALX3_full_2/ALX3_full_2_sites_ATAC_Iri_PostPr.txt > Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ALX3_full_2_sites_ATAC_Iri_PostPr_0.95.txt
-awk 'BEGIN{OFS="\t"} $7>0.95 {print $0}' Combined_analysis/centipede_motif_footprint/centipede_output/ALX4_DBD/ALX4_DBD_sites_ATAC_Iri_PostPr.txt > Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ALX4_DBD_sites_ATAC_Iri_PostPr_0.95.txt
-awk 'BEGIN{OFS="\t"} $7>0.95 {print $0}' Combined_analysis/centipede_motif_footprint/centipede_output/GBX2_DBD_2/GBX2_DBD_2_sites_ATAC_Iri_PostPr.txt > Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/GBX2_DBD_2_sites_ATAC_Iri_PostPr_0.95.txt
-awk 'BEGIN{OFS="\t"} $7>0.95 {print $0}' Combined_analysis/centipede_motif_footprint/centipede_output/ETS1_DBD_1/ETS1_DBD_1_sites_ATAC_Iri_PostPr.txt > Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ETS1_DBD_1_sites_ATAC_Iri_PostPr_0.95.txt
-awk 'BEGIN{OFS="\t"} $7>0.95 {print $0}' Combined_analysis/centipede_motif_footprint/centipede_output/TFEC_DBD/TFEC_DBD_sites_ATAC_Iri_PostPr.txt > Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/TFEC_DBD_sites_ATAC_Iri_PostPr_0.95.txt
-awk 'BEGIN{OFS="\t"} $7>0.95 {print $0}' Combined_analysis/centipede_motif_footprint/centipede_output/MA0442.2/MA0442.2_sites_ATAC_Iri_PostPr.txt > Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0442.2_sites_ATAC_Iri_PostPr_0.95.txt
-awk 'BEGIN{OFS="\t"} $7>0.95 {print $0}' Combined_analysis/centipede_motif_footprint/centipede_output/MA0620.2/MA0620.2_sites_ATAC_Iri_PostPr.txt > Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0620.2_sites_ATAC_Iri_PostPr_0.95.txt
-awk 'BEGIN{OFS="\t"} $7>0.95 {print $0}' Combined_analysis/centipede_motif_footprint/centipede_output/MA0041.1/MA0041.1_sites_ATAC_Iri_PostPr.txt > Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0041.1_sites_ATAC_Iri_PostPr_0.95.txt
-
-
-
-#21810 Alx1_DBD_2_sites_ATAC_Iri_PostPr_0.95.txt
-#21161 ALX3_full_2_sites_ATAC_Iri_PostPr_0.95.txt
-#16694 ALX4_DBD_sites_ATAC_Iri_PostPr_0.95.txt
-#985 ETS1_DBD_1_sites_ATAC_Iri_PostPr_0.95.txt
-#5679 GBX2_DBD_2_sites_ATAC_Iri_PostPr_0.95.txt
-#42688 MA0041.1_sites_ATAC_Iri_PostPr_0.95.txt #foxd3 (out of 319261)
-#4063 MA0442.2_sites_ATAC_Iri_PostPr_0.95.txt #sox10
-#6390 MA0620.2_sites_ATAC_Iri_PostPr_0.95.txt #mitf
-#4205 TFEC_DBD_sites_ATAC_Iri_PostPr_0.95.txt
-
-#make bed file for browser of all locations of TF motif#
-zcat Combined_analysis/centipede_motif_footprint/8_fimo/MA0854.1.danRer10.fimo.txt.gz | awk 'BEGIN{OFS="\t"} {print $2, $3, $4, 1}' > alx1_FIMO_location_forBrowser.bed
-zcat Combined_analysis/centipede_motif_footprint/8_fimo/MA0634.1.danRer10.fimo.txt.gz | awk 'BEGIN{OFS="\t"} {print $2, $3, $4, 1}' > alx3_FIMO_location_forBrowser.bed
-zcat Combined_analysis/centipede_motif_footprint/8_fimo/MA0853.1.danRer10.fimo.txt.gz | awk 'BEGIN{OFS="\t"} {print $2, $3, $4, 1}' > alx4_FIMO_location_forBrowser.bed
-zcat Combined_analysis/centipede_motif_footprint/8_fimo/MA0890.1.danRer10.fimo.txt.gz | awk 'BEGIN{OFS="\t"} {print $2, $3, $4, 1}' > gbx2_FIMO_location_forBrowser.bed
-zcat Combined_analysis/centipede_motif_footprint/8_fimo/MA0871.1.danRer10.fimo.txt.gz | awk 'BEGIN{OFS="\t"} {print $2, $3, $4, 1}' > tfec_FIMO_location_forBrowser.bed
-zcat Combined_analysis/centipede_motif_footprint/8_fimo/MA0442.2.danRer10.fimo.txt.gz | awk 'BEGIN{OFS="\t"} {print $2, $3, $4, 1}' > sox10_FIMO_location_forBrowser.bed
-
-zcat Combined_analysis/centipede_motif_footprint/8_fimo/Alx1_DBD_2.danRer10.fimo.txt.gz | awk 'BEGIN{OFS="\t"} {print $2, $3, $4, 1}' > alx1DBD_FIMO_location_forBrowser.bed
-zcat Combined_analysis/centipede_motif_footprint/8_fimo/ALX4_DBD.danRer10.fimo.txt.gz | awk 'BEGIN{OFS="\t"} {print $2, $3, $4, 1}' > alx4DBD_FIMO_location_forBrowser.bed
-
-
-## How many of Footprinted regions are actual peaks and unmethylated? ##
-bedtools intersect -u -a Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt -b  Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/Alx1_DBD_2_sites_ATAC_Iri_PostPr_0.95.txt >  Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/Alx1_DBD_2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt
-bedtools intersect -u -a Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt -b  Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ALX3_full_2_sites_ATAC_Iri_PostPr_0.95.txt >  Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ALX3_full_2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt
-bedtools intersect -u -a Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt -b  Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ALX4_DBD_sites_ATAC_Iri_PostPr_0.95.txt >  Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ALX4_DBD_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt
-bedtools intersect -u -a Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt -b  Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/GBX2_DBD_2_sites_ATAC_Iri_PostPr_0.95.txt >  Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/GBX2_DBD_2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt
-bedtools intersect -u -a Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt -b  Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ETS1_DBD_1_sites_ATAC_Iri_PostPr_0.95.txt >  Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ETS1_DBD_1_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt
-bedtools intersect -u -a Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt -b  Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/TFEC_DBD_sites_ATAC_Iri_PostPr_0.95.txt >  Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/TFEC_DBD_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt
-bedtools intersect -u -a Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt -b  Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0442.2_sites_ATAC_Iri_PostPr_0.95.txt >  Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0442.2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt
-bedtools intersect -u -a Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt -b  Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0620.2_sites_ATAC_Iri_PostPr_0.95.txt >  Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0620.2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt
-bedtools intersect -u -a Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt -b  Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0041.1_sites_ATAC_Iri_PostPr_0.95.txt >  Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0041.1_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt
-
-#1024 Alx1_DBD_2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt
-#  1089 ALX3_full_2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt
-#  1261 ALX4_DBD_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt
-#   443 ETS1_DBD_1_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt
-#    61 GBX2_DBD_2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt
-#   847 MA0041.1_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt
-#   711 MA0442.2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt
-#  1592 MA0620.2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt
-#  1367 TFEC_DBD_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt
-
-bedtools intersect -wao -a Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/Alx1_DBD_2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt -b BS_only/Iri_Combined_DSS.bed > Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/Alx1_DBD_2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks_wMeth.txt
-bedtools intersect -wao -a Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ALX3_full_2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt -b BS_only/Iri_Combined_DSS.bed > Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ALX3_full_2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks_wMeth.txt
-bedtools intersect -wao -a Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ALX4_DBD_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt -b BS_only/Iri_Combined_DSS.bed > Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ALX4_DBD_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks_wMeth.txt
-bedtools intersect -wao -a Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/GBX2_DBD_2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt -b BS_only/Iri_Combined_DSS.bed > Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/GBX2_DBD_2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks_wMeth.txt
-bedtools intersect -wao -a Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ETS1_DBD_1_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt -b BS_only/Iri_Combined_DSS.bed > Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ETS1_DBD_1_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks_wMeth.txt
-bedtools intersect -wao -a Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/TFEC_DBD_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt -b BS_only/Iri_Combined_DSS.bed > Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/TFEC_DBD_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks_wMeth.txt
-bedtools intersect -wao -a Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0442.2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt -b BS_only/Iri_Combined_DSS.bed > Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0442.2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks_wMeth.txt
-bedtools intersect -wao -a Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0620.2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt -b BS_only/Iri_Combined_DSS.bed > Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0620.2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks_wMeth.txt
-bedtools intersect -wao -a Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0041.1_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks.txt -b BS_only/Iri_Combined_DSS.bed > Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0041.1_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks_wMeth.txt
-
-
-# in R
-setwd("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif")
-meth_ALX1 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/Alx1_DBD_2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks_wMeth.txt", sep = "\t", header = F, quote = "", stringsAsFactors = F)
-meth_ALX3 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ALX3_full_2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks_wMeth.txt", sep = "\t", header = F, quote = "", stringsAsFactors = F)
-meth_ALX4 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ALX4_DBD_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks_wMeth.txt", sep = "\t", header = F, quote = "", stringsAsFactors = F)
-meth_GBX2 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/GBX2_DBD_2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks_wMeth.txt", sep = "\t", header = F, quote = "", stringsAsFactors = F)
-meth_ETS1 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ETS1_DBD_1_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks_wMeth.txt", sep = "\t", header = F, quote = "", stringsAsFactors = F)
-meth_SOX10 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0442.2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks_wMeth.txt", sep = "\t", header = F, quote = "", stringsAsFactors = F)
-meth_TFEC <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/TFEC_DBD_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks_wMeth.txt", sep = "\t", header = F, quote = "", stringsAsFactors = F)
-meth_MITF<- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0620.2_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks_wMeth.txt", sep = "\t", header = F, quote = "", stringsAsFactors = F)
-meth_FOXD3 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0041.1_sites_ATAC_Iri_PostPr_0.95_inIDRpeaks_wMeth.txt", sep = "\t", header = F, quote = "", stringsAsFactors = F)
-
-meth_ALX1[meth_ALX1$V26 == ".",]$V24 <- 0
-meth_ALX1[meth_ALX1$V26 == ".",]$V26 <- 0
-meth_ALX3[meth_ALX3$V26 == ".",]$V24 <- 0
-meth_ALX3[meth_ALX3$V26 == ".",]$V26 <- 0
-meth_ALX4[meth_ALX4$V26 == ".",]$V24 <- 0
-meth_ALX4[meth_ALX4$V26 == ".",]$V26 <- 0
-meth_GBX2[meth_GBX2$V26 == ".",]$V24 <- 0
-meth_GBX2[meth_GBX2$V26 == ".",]$V26 <- 0
-meth_ETS1[meth_ETS1$V26 == ".",]$V24 <- 0
-meth_ETS1[meth_ETS1$V26 == ".",]$V26 <- 0
-meth_SOX10[meth_SOX10$V26 == ".",]$V24 <- 0
-meth_SOX10[meth_SOX10$V26 == ".",]$V26 <- 0
-meth_TFEC[meth_TFEC$V26 == ".",]$V24 <- 0
-meth_TFEC[meth_TFEC$V26 == ".",]$V26 <- 0
-meth_MITF[meth_MITF$V26 == ".",]$V24 <- 0
-meth_MITF[meth_MITF$V26 == ".",]$V26 <- 0
-meth_FOXD3[meth_FOXD3$V26 == ".",]$V24 <- 0
-meth_FOXD3[meth_FOXD3$V26 == ".",]$V26 <- 0
-
-meth_ALX1$V24 <- as.numeric(meth_ALX1$V24)
-meth_ALX1$V26 <- as.numeric(meth_ALX1$V26)
-meth_ALX3$V24 <- as.numeric(meth_ALX3$V24)
-meth_ALX3$V26 <- as.numeric(meth_ALX3$V26)
-meth_ALX4$V24 <- as.numeric(meth_ALX4$V24)
-meth_ALX4$V26 <- as.numeric(meth_ALX4$V26)
-meth_GBX2$V24 <- as.numeric(meth_GBX2$V24)
-meth_GBX2$V26 <- as.numeric(meth_GBX2$V26)
-meth_ETS1$V24 <- as.numeric(meth_ETS1$V24)
-meth_ETS1$V26 <- as.numeric(meth_ETS1$V26)
-meth_SOX10$V24 <- as.numeric(meth_SOX10$V24)
-meth_SOX10$V26 <- as.numeric(meth_SOX10$V26)
-meth_TFEC$V24 <- as.numeric(meth_TFEC$V24)
-meth_TFEC$V26 <- as.numeric(meth_TFEC$V26)
-meth_MITF$V24 <- as.numeric(meth_MITF$V24)
-meth_MITF$V26 <- as.numeric(meth_MITF$V26)
-meth_FOXD3$V24 <- as.numeric(meth_FOXD3$V24)
-meth_FOXD3$V26 <- as.numeric(meth_FOXD3$V26)
-
-meth_ALX1$meth <- meth_ALX1$V25/(meth_ALX1$V24)*100  
-meth_ALX1_aggregate <- ddply(meth_ALX1,.(V1,V2,V3),summarise, avemeth = mean(meth), coverage = sum(V26))
-meth_ALX3$meth <- meth_ALX3$V25/(meth_ALX3$V24)*100  
-meth_ALX3_aggregate <- ddply(meth_ALX3,.(V1,V2,V3),summarise, avemeth = mean(meth), coverage = sum(V26))
-meth_ALX4$meth <- meth_ALX4$V25/(meth_ALX4$V24)*100  
-meth_ALX4_aggregate <- ddply(meth_ALX4,.(V1,V2,V3),summarise, avemeth = mean(meth), coverage = sum(V26))
-meth_GBX2$meth <- meth_GBX2$V25/(meth_GBX2$V24)*100  
-meth_GBX2_aggregate <- ddply(meth_GBX2,.(V1,V2,V3),summarise, avemeth = mean(meth), coverage = sum(V26))
-meth_ETS1$meth <- meth_ETS1$V25/(meth_ETS1$V24)*100  
-meth_ETS1_aggregate <- ddply(meth_ETS1,.(V1,V2,V3),summarise, avemeth = mean(meth), coverage = sum(V26))
-meth_SOX10$meth <- meth_SOX10$V25/(meth_SOX10$V24)*100  
-meth_SOX10_aggregate <- ddply(meth_SOX10,.(V1,V2,V3),summarise, avemeth = mean(meth), coverage = sum(V26))
-meth_MITF$meth <- meth_MITF$V25/(meth_MITF$V24)*100  
-meth_MITF_aggregate <- ddply(meth_MITF,.(V1,V2,V3),summarise, avemeth = mean(meth), coverage = sum(V26))
-meth_TFEC$meth <- meth_TFEC$V25/(meth_TFEC$V24)*100  
-meth_TFEC_aggregate <- ddply(meth_TFEC,.(V1,V2,V3),summarise, avemeth = mean(meth), coverage = sum(V26))
-meth_FOXD3$meth <- meth_FOXD3$V25/(meth_FOXD3$V24)*100  
-meth_FOXD3_aggregate <- ddply(meth_FOXD3,.(V1,V2,V3),summarise, avemeth = mean(meth), coverage = sum(V26))
-
-count1 <-data.frame(c("ALX1", "ALX3","ALX4","GBX2","SOX10","ETS1","TFEC","MITF","FOXD3"),c(nrow(meth_ALX1_aggregate[meth_ALX1_aggregate$avemeth <50,]),nrow(meth_ALX3_aggregate[meth_ALX3_aggregate$avemeth <50,]),nrow(meth_ALX4_aggregate[meth_ALX4_aggregate$avemeth <50,]),nrow(meth_GBX2_aggregate[meth_GBX2_aggregate$avemeth <50,]),nrow(meth_SOX10_aggregate[meth_SOX10_aggregate$avemeth <50,]),nrow(meth_ETS1_aggregate[meth_ETS1_aggregate$avemeth <50,]),nrow(meth_TFEC_aggregate[meth_TFEC_aggregate$avemeth <50,]),nrow(meth_MITF_aggregate[meth_MITF_aggregate$avemeth <50,]),nrow(meth_FOXD3_aggregate[meth_FOXD3_aggregate$avemeth <50,])))
-colnames(count1) <- c("Motif","DMAR")
-count1$Motif <- factor(count1$Motif, levels = c("ALX1","ALX3","ALX4","GBX2","SOX10","ETS1","TFEC","MITF","FOXD3"))
-
-#  Motif DMAR
-#1  ALX1  804
-#2  ALX3  863
-#3  ALX4 1002
-#4  GBX2   48
-#5 SOX10  583
-#6  ETS1  427
-#7  TFEC 1158
-#8  MITF 1312
-#9 FOXD3  679
-
-#combine all ATAC peak with low methylation (<50%)
-meth_ALX1_aggregate$chrompos <- paste(meth_ALX1_aggregate$V1,":",meth_ALX1_aggregate$V2,"-",meth_ALX1_aggregate$V3, sep = "")
-meth_ALX3_aggregate$chrompos <- paste(meth_ALX3_aggregate$V1,":",meth_ALX3_aggregate$V2,"-",meth_ALX3_aggregate$V3, sep = "")
-meth_ALX4_aggregate$chrompos <- paste(meth_ALX4_aggregate$V1,":",meth_ALX4_aggregate$V2,"-",meth_ALX4_aggregate$V3, sep = "")
-meth_GBX2_aggregate$chrompos <- paste(meth_GBX2_aggregate$V1,":",meth_GBX2_aggregate$V2,"-",meth_GBX2_aggregate$V3, sep = "")
-meth_ETS1_aggregate$chrompos <- paste(meth_ETS1_aggregate$V1,":",meth_ETS1_aggregate$V2,"-",meth_ETS1_aggregate$V3, sep = "")
-meth_SOX10_aggregate$chrompos <- paste(meth_SOX10_aggregate$V1,":",meth_SOX10_aggregate$V2,"-",meth_SOX10_aggregate$V3, sep = "")
-meth_TFEC_aggregate$chrompos <- paste(meth_TFEC_aggregate$V1,":",meth_TFEC_aggregate$V2,"-",meth_TFEC_aggregate$V3, sep = "")
-meth_MITF_aggregate$chrompos <- paste(meth_MITF_aggregate$V1,":",meth_MITF_aggregate$V2,"-",meth_MITF_aggregate$V3, sep = "")
-meth_FOXD3_aggregate$chrompos <- paste(meth_FOXD3_aggregate$V1,":",meth_FOXD3_aggregate$V2,"-",meth_FOXD3_aggregate$V3, sep = "")
-
-ATACpeak <-data.frame(unique(c(meth_ALX1_aggregate$chrompos,meth_ALX3_aggregate$chrompos,meth_ALX4_aggregate$chrompos,meth_GBX2_aggregate$chrompos,meth_ETS1_aggregate$chrompos,meth_SOX10_aggregate$chrompos,meth_TFEC_aggregate$chrompos,meth_MITF_aggregate$chrompos,meth_FOXD3_aggregate$chrompos)))
-colnames(ATACpeak) <- "chrompos"
-
-ATAC_motif_merged <-Reduce(function(x, y) merge(x, y,by = "chrompos", all = T), list(ATACpeak, meth_ALX1_aggregate[,c("chrompos","coverage")],meth_ALX3_aggregate[,c("chrompos","coverage")],meth_ALX4_aggregate[,c("chrompos","coverage")],meth_GBX2_aggregate[,c("chrompos","coverage")],meth_ETS1_aggregate[,c("chrompos","coverage")],meth_SOX10_aggregate[,c("chrompos","coverage")],meth_TFEC_aggregate[,c("chrompos","coverage")],meth_MITF_aggregate[,c("chrompos","coverage")],meth_FOXD3_aggregate[,c("chrompos","coverage")]))
-colnames(ATAC_motif_merged) <- c("chrompos","ALX1","ALX3","ALX4","GBX2","ETS1","SOX10","TFEC","MITF","FOXD3")
-ATAC_motif_merged[is.na(ATAC_motif_merged)] <- "."
-ATAC_motif_merged[ATAC_motif_merged$ALX1 != ".",]$ALX1 <- 1
-ATAC_motif_merged[ATAC_motif_merged$ALX1 == ".",]$ALX1 <- 0
-ATAC_motif_merged[ATAC_motif_merged$ALX3 != ".",]$ALX3 <- 1
-ATAC_motif_merged[ATAC_motif_merged$ALX3 == ".",]$ALX3 <- 0
-ATAC_motif_merged[ATAC_motif_merged$ALX4 != ".",]$ALX4 <- 1
-ATAC_motif_merged[ATAC_motif_merged$ALX4 == ".",]$ALX4 <- 0
-ATAC_motif_merged[ATAC_motif_merged$GBX2 != ".",]$GBX2 <- 1
-ATAC_motif_merged[ATAC_motif_merged$GBX2 == ".",]$GBX2 <- 0
-ATAC_motif_merged[ATAC_motif_merged$ETS1 != ".",]$ETS1 <- 1
-ATAC_motif_merged[ATAC_motif_merged$ETS1 == ".",]$ETS1 <- 0
-ATAC_motif_merged[ATAC_motif_merged$SOX10 != ".",]$SOX10 <- 1
-ATAC_motif_merged[ATAC_motif_merged$SOX10 == ".",]$SOX10 <- 0
-ATAC_motif_merged[ATAC_motif_merged$TFEC != ".",]$TFEC <- 1
-ATAC_motif_merged[ATAC_motif_merged$TFEC == ".",]$TFEC <- 0
-ATAC_motif_merged[ATAC_motif_merged$MITF != ".",]$MITF <- 1
-ATAC_motif_merged[ATAC_motif_merged$MITF == ".",]$MITF <- 0
-ATAC_motif_merged[ATAC_motif_merged$FOXD3 != ".",]$FOXD3 <- 1
-ATAC_motif_merged[ATAC_motif_merged$FOXD3 == ".",]$FOXD3 <- 0
-
-ATAC_motif_merged[,c(2:10)] <- lapply(ATAC_motif_merged[,c(2:10)], as.numeric) 
-
-library("ComplexHeatmap") ## For heatmap
-library("circlize") ## For color options
-name <- ATAC_motif_merged[,1]
-df.OG <- ATAC_motif_merged[,c(2:10)]
-row.names(df.OG) <- name
-
-kclus <- kmeans(df.OG,10)
-split <-  kclus$cluster
-ht = Heatmap(df.OG, column_title = "Demethylated ATAC peaks with motifs",name= "Peak",col = colorRamp2(c(0, 1), c("#f8f8f8","#ea4c88")), 
-    cluster_rows = T, cluster_columns = FALSE,show_row_names = FALSE)
-ht
-
-ATAC_motif_merged$total <- apply(ATAC_motif_merged, 1, function(x) {as.numeric(x[2])+as.numeric(x[3])+as.numeric(x[4])+as.numeric(x[5])+as.numeric(x[6])+as.numeric(x[7])+as.numeric(x[8])+as.numeric(x[9])+as.numeric(x[10])})
-
-ATAC_motif_merged <- ATAC_motif_merged[order(-ATAC_motif_merged$total),]
-ATAC_motif_merged[ATAC_motif_merged$total > 3,]
-
-library("ComplexHeatmap") ## For heatmap
-library("circlize") ## For color options
-name <- ATAC_motif_merged[ATAC_motif_merged$total > 3,1]
-df.OG <- ATAC_motif_merged[ATAC_motif_merged$total > 3,c(2:10)]
-row.names(df.OG) <- name
-
-kclus <- kmeans(df.OG,5)
-split <-  kclus$cluster
-ht = Heatmap(df.OG, column_title = "Demethylated ATAC peaks with multiple motifs",name= "Peak",col = colorRamp2(c(0, 1), c("#f8f8f8","#ea4c88")), 
-    cluster_rows = T, cluster_columns = FALSE,show_row_names = FALSE)
-ht
-
-#intersect with dynamic regions to find potential candidates
-cd Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif
-bedtools intersect -wo -a Combined_analysis/FIMO_motif_scan/DMAR_Iri_Accesible_for_FIMO.bed -b Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/Alx1_DBD_2_sites_ATAC_Iri_PostPr_0.95.txt > DMAR_Iri_Accesible_ALX1_PostPr_0.95.bed
-bedtools intersect -wo -a Combined_analysis/FIMO_motif_scan/DMAR_Iri_Accesible_for_FIMO.bed -b Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ALX3_full_2_sites_ATAC_Iri_PostPr_0.95.txt > DMAR_Iri_Accesible_ALX3_PostPr_0.95.bed
-bedtools intersect -wo -a Combined_analysis/FIMO_motif_scan/DMAR_Iri_Accesible_for_FIMO.bed -b Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ALX4_DBD_sites_ATAC_Iri_PostPr_0.95.txt > DMAR_Iri_Accesible_ALX4_PostPr_0.95.bed
-bedtools intersect -wo -a Combined_analysis/FIMO_motif_scan/DMAR_Iri_Accesible_for_FIMO.bed -b Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/ETS1_DBD_1_sites_ATAC_Iri_PostPr_0.95.txt > DMAR_Iri_Accesible_ETS1_PostPr_0.95.bed
-bedtools intersect -wo -a Combined_analysis/FIMO_motif_scan/DMAR_Iri_Accesible_for_FIMO.bed -b Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/GBX2_DBD_2_sites_ATAC_Iri_PostPr_0.95.txt > DMAR_Iri_Accesible_GBX2_PostPr_0.95.bed
-bedtools intersect -wo -a Combined_analysis/FIMO_motif_scan/DMAR_Iri_Accesible_for_FIMO.bed -b Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0442.2_sites_ATAC_Iri_PostPr_0.95.txt > DMAR_Iri_Accesible_SOX10_PostPr_0.95.bed
-bedtools intersect -wo -a Combined_analysis/FIMO_motif_scan/DMAR_Iri_Accesible_for_FIMO.bed -b Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/TFEC_DBD_sites_ATAC_Iri_PostPr_0.95.txt > DMAR_Iri_Accesible_TFEC_PostPr_0.95.bed
-bedtools intersect -wo -a Combined_analysis/FIMO_motif_scan/DMAR_Iri_Accesible_for_FIMO.bed -b Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0620.2_sites_ATAC_Iri_PostPr_0.95.txt > DMAR_Iri_Accesible_MITF_PostPr_0.95.bed
-bedtools intersect -wo -a Combined_analysis/FIMO_motif_scan/DMAR_Iri_Accesible_for_FIMO.bed -b Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/MA0041.1_sites_ATAC_Iri_PostPr_0.95.txt > DMAR_Iri_Accesible_FOXD3_PostPr_0.95.bed
-
-#1142 DMAR_Iri_Accesible_ALX1_PostPr_0.95.bed #not unique number since the motif can be called on both strands (forward and reverse) 
-# 1146 DMAR_Iri_Accesible_ALX3_PostPr_0.95.bed
-# 1220 DMAR_Iri_Accesible_ALX4_PostPr_0.95.bed
-#   37 DMAR_Iri_Accesible_ETS1_PostPr_0.95.bed
-#  506 DMAR_Iri_Accesible_FOXD3_PostPr_0.95.bed
-#   83 DMAR_Iri_Accesible_GBX2_PostPr_0.95.bed
-#  999 DMAR_Iri_Accesible_MITF_PostPr_0.95.bed
-#  318 DMAR_Iri_Accesible_SOX10_PostPr_0.95.bed
-#  526 DMAR_Iri_Accesible_TFEC_PostPr_0.95.bed
-
-
-setwd("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif")
-cent_ALX1 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_ALX1_PostPr_0.95.bed", sep = "\t", header = F, quote = "", stringsAsFactors = F)
-cent_ALX3 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_ALX3_PostPr_0.95.bed", sep = "\t", header = F, quote = "", stringsAsFactors = F)
-cent_ALX4 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_ALX4_PostPr_0.95.bed", sep = "\t", header = F, quote = "", stringsAsFactors = F)
-cent_GBX2 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_GBX2_PostPr_0.95.bed", sep = "\t", header = F, quote = "", stringsAsFactors = F)
-cent_ETS1 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_ETS1_PostPr_0.95.bed", sep = "\t", header = F, quote = "", stringsAsFactors = F)
-cent_SOX10 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_SOX10_PostPr_0.95.bed", sep = "\t", header = F, quote = "", stringsAsFactors = F)
-cent_TFEC <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_TFEC_PostPr_0.95.bed", sep = "\t", header = F, quote = "", stringsAsFactors = F)
-cent_MITF<- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_MITF_PostPr_0.95.bed", sep = "\t", header = F, quote = "", stringsAsFactors = F)
-cent_FOXD3 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_FOXD3_PostPr_0.95.bed", sep = "\t", header = F, quote = "", stringsAsFactors = F)
-
-
-
-cent_ALX1$chrompos2 <- paste(cent_ALX1$V5,":",cent_ALX1$V6,"-",cent_ALX1$V7, sep = "")
-cent_ALX3$chrompos2 <- paste(cent_ALX3$V5,":",cent_ALX3$V6,"-",cent_ALX3$V7, sep = "")
-cent_ALX4$chrompos2 <- paste(cent_ALX4$V5,":",cent_ALX4$V6,"-",cent_ALX4$V7, sep = "")
-cent_GBX2$chrompos2 <- paste(cent_GBX2$V5,":",cent_GBX2$V6,"-",cent_GBX2$V7, sep = "")
-cent_ETS1$chrompos2 <- paste(cent_ETS1$V5,":",cent_ETS1$V6,"-",cent_ETS1$V7, sep = "")
-cent_SOX10$chrompos2 <- paste(cent_SOX10$V5,":",cent_SOX10$V6,"-",cent_SOX10$V7, sep = "")
-cent_TFEC$chrompos2 <- paste(cent_TFEC$V5,":",cent_TFEC$V6,"-",cent_TFEC$V7, sep = "")
-cent_MITF$chrompos2 <- paste(cent_MITF$V5,":",cent_MITF$V6,"-",cent_MITF$V7, sep = "")
-cent_FOXD3$chrompos2 <- paste(cent_FOXD3$V5,":",cent_FOXD3$V6,"-",cent_FOXD3$V7, sep = "")
-
-
-count <-data.frame(c("ALX1", "ALX3","ALX4","GBX2","SOX10","ETS1","TFEC","MITF","FOXD3"),c(length(unique(cent_ALX1$chrompos2)),length(unique(cent_ALX3$chrompos2)),length(unique(cent_ALX4$chrompos2)),length(unique(cent_GBX2$chrompos2)),length(unique(cent_SOX10$chrompos2)),length(unique(cent_ETS1$chrompos2)),length(unique(cent_TFEC$chrompos2)),length(unique(cent_MITF$chrompos2)),length(unique(cent_FOXD3$chrompos2))))
-colnames(count) <- c("Motif","DMAR")
-count$Motif <- factor(count$Motif, levels = c("ALX1","ALX3","ALX4","GBX2","SOX10","ETS1","TFEC","MITF","FOXD3"))
-
-#  Motif DMAR
-#1  ALX1  718
-#2  ALX3  771
-#3  ALX4  890
-#4  GBX2   50
-#5 SOX10  318
-#6  ETS1   37
-#7  TFEC  424
-#8  MITF  501
-#9 FOXD3  506
-
-mypalette <-c("#740001","#ae0001","#e35d6a","#ffdfba","#ffffba","#baffc9","#bae1ff","#428bca","#d896ff")
-p <- ggplot(count, aes(x=Motif, y=DMAR, fill=Motif)) +geom_bar(stat="identity",colour = "black", position=position_dodge())+ggtitle("Iri-specific Dynamic Regions with Motifs")+theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 16), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
-   labs(x = "Motif", y = "# of accessible DMARs")+scale_fill_manual(values = mypalette)+scale_color_manual(values=mypalette)+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))+ theme(legend.title=element_text(size=16,face = "bold"),legend.text=element_text(size=12,face = "bold"))
-p
-
-CENTpeak <-data.frame(as.character(unique(c(cent_ALX1$V4,cent_ALX3$V4,cent_ALX4$V4,cent_GBX2$V4,cent_ETS1$V4,cent_SOX10$V4,cent_TFEC$V4,cent_MITF$V4,cent_FOXD3$V4))))
-colnames(CENTpeak) <- "V4"
-
-CENT_motif_merged <-Reduce(function(x, y) merge(x, y,by = "V4", all.x = T), list(CENTpeak, cent_ALX1[,c("V4","chrompos2")],cent_ALX3[,c("V4","chrompos2")],cent_ALX4[,c("V4","chrompos2")],cent_GBX2[,c("V4","chrompos2")],cent_ETS1[,c("V4","chrompos2")],cent_SOX10[,c("V4","chrompos2")],cent_TFEC[,c("V4","chrompos2")],cent_MITF[,c("V4","chrompos2")],cent_FOXD3[,c("V4","chrompos2")]))
-colnames(CENT_motif_merged) <- c("V4","ALX1","ALX3","ALX4","GBX2","ETS1","SOX10","TFEC","MITF","FOXD3")
-
-CENT_motif_merged <-CENT_motif_merged[!duplicated(CENT_motif_merged$V4),]
-CENT_motif_merged[is.na(CENT_motif_merged)] <-0
-CENT_motif_merged[CENT_motif_merged$ALX1 != "0",]$ALX1 <-1
-CENT_motif_merged[CENT_motif_merged$ALX3 != "0",]$ALX3 <-1
-CENT_motif_merged[CENT_motif_merged$ALX4 != "0",]$ALX4 <-1
-CENT_motif_merged[CENT_motif_merged$GBX2 != "0",]$GBX2 <-1
-CENT_motif_merged[CENT_motif_merged$ETS1 != "0",]$ETS1 <-1
-CENT_motif_merged[CENT_motif_merged$SOX10 != "0",]$SOX10 <-1
-CENT_motif_merged[CENT_motif_merged$TFEC != "0",]$TFEC <-1
-CENT_motif_merged[CENT_motif_merged$MITF != "0",]$MITF <-1
-CENT_motif_merged[CENT_motif_merged$FOXD3 != "0",]$FOXD3 <-1
-
-CENT_motif_merged[,c(2:10)] <- lapply(CENT_motif_merged[,c(2:10)], as.numeric) 
-
-library("ComplexHeatmap") ## For heatmap
-library("circlize") ## For color options
-name <- CENT_motif_merged[,1]
-df.OG <- CENT_motif_merged[,c(2:10)]
-row.names(df.OG) <- name
-
-kclus <- kmeans(df.OG,5)
-split <-  kclus$cluster
-ht = Heatmap(df.OG, column_title = "DMARs with motifs",name= "Peak",col = c("#f8f8f8","#ea4c88"), 
-    cluster_rows = T, cluster_columns = FALSE,show_row_names = FALSE)
-ht
-
-CENT_motif_merged$total <- apply(CENT_motif_merged, 1, function(x) {as.numeric(x[2])+as.numeric(x[3])+as.numeric(x[4])+as.numeric(x[5])+as.numeric(x[6])+as.numeric(x[7])+as.numeric(x[8])+as.numeric(x[9])+as.numeric(x[10])})
-
-CENT_motif_merged <- CENT_motif_merged[order(-CENT_motif_merged$total),]
-CENT_motif_merged[CENT_motif_merged$total > 3,]
-
-name <- CENT_motif_merged[CENT_motif_merged$total > 3,1]
-df.OG <- CENT_motif_merged[CENT_motif_merged$total > 3,c(2:10)]
-row.names(df.OG) <- name
-
-kclus <- kmeans(df.OG,5)
-split <-  kclus$cluster
-ht = Heatmap(df.OG, column_title = "DMAR peaks with multiple motifs",name= "Peak",col = c("#f8f8f8","#ea4c88"), 
-    cluster_rows = T, cluster_columns = FALSE,show_row_names = FALSE)
-ht
-
-str(CENT_motif_merged[CENT_motif_merged$FOXD3 == 1 & CENT_motif_merged$SOX10 ==1 & CENT_motif_merged$ALX4 ==1,])
-
-########MAKE DMAR INFORMATION WITH CENTIPEDE MOTIF INFO######
-colnames(CENT_motif_merged)[1] <- "chrompos"
-CENT_motif_merged$chrompos <- as.character(CENT_motif_merged$chrompos)
-CENT_DMAR_Iri_accessible <- merge(DMAR_Iri_accessible,CENT_motif_merged, by = "chrompos",all.x = T)
-
-CENT_DMAR_Iri_accessible[is.na(CENT_DMAR_Iri_accessible)] <- 0
-
-write.table(CENT_DMAR_Iri_accessible[,c(2,3,4,1,5:43)], "Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/CentipedeMotif_DMAR_Iri_accessible_info.bed", col.names = T,row.names = F, quote =F, sep = "\t")
-write.table(CENT_DMAR_Iri_accessible[,c(2,3,4,1,5:43)], "Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/CentipedeMotif_DMAR_Iri_accessible_info.noheader.bed", col.names = F,row.names = F, quote =F, sep = "\t")
-
-
-#annotation of motif regions
-for i in *bed; do annotatePeaks.pl $i danRer10 -annStats ${i/bed/.annstats} > ${i/.bed/.annotated.txt};done
-
-ann_ALX1 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_ALX1_PostPr_0.95.annotated.txt", sep = "\t", header = T, quote = "", stringsAsFactors = F)
-ann_ALX3 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_ALX3_PostPr_0.95.annotated.txt", sep = "\t", header = T, quote = "", stringsAsFactors = F)
-ann_ALX4 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_ALX4_PostPr_0.95.annotated.txt", sep = "\t", header = T, quote = "", stringsAsFactors = F)
-ann_GBX2 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_GBX2_PostPr_0.95.annotated.txt", sep = "\t", header = T, quote = "", stringsAsFactors = F)
-ann_ETS1 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_ETS1_PostPr_0.95.annotated.txt", sep = "\t", header = T, quote = "", stringsAsFactors = F)
-ann_SOX10 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_SOX10_PostPr_0.95.annotated.txt", sep = "\t", header = T, quote = "", stringsAsFactors = F)
-ann_TFEC <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_TFEC_PostPr_0.95.annotated.txt", sep = "\t", header = T, quote = "", stringsAsFactors = F)
-ann_MITF <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_MITF_PostPr_0.95.annotated.txt", sep = "\t", header = T, quote = "", stringsAsFactors = F)
-ann_FOXD3 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_FOXD3_PostPr_0.95.annotated.txt", sep = "\t", header = T, quote = "", stringsAsFactors = F)
-
-
-
-ann_ALX1$Annotation2 <- apply(ann_ALX1, 1, function(x) {unlist(strsplit(x[8], " \\("))[1]})
-ann_ALX3$Annotation2 <- apply(ann_ALX3, 1, function(x) {unlist(strsplit(x[8], " \\("))[1]})
-ann_ALX4$Annotation2 <- apply(ann_ALX4, 1, function(x) {unlist(strsplit(x[8], " \\("))[1]})
-ann_GBX2$Annotation2 <- apply(ann_GBX2, 1, function(x) {unlist(strsplit(x[8], " \\("))[1]})
-ann_ETS1$Annotation2 <- apply(ann_ETS1, 1, function(x) {unlist(strsplit(x[8], " \\("))[1]})
-ann_SOX10$Annotation2 <- apply(ann_SOX10, 1, function(x) {unlist(strsplit(x[8], " \\("))[1]})
-ann_TFEC$Annotation2 <- apply(ann_TFEC, 1, function(x) {unlist(strsplit(x[8], " \\("))[1]})
-ann_MITF$Annotation2 <- apply(ann_MITF, 1, function(x) {unlist(strsplit(x[8], " \\("))[1]})
-ann_FOXD3$Annotation2 <- apply(ann_FOXD3, 1, function(x) {unlist(strsplit(x[8], " \\("))[1]})
-
-
-Annotation_merged <-Reduce(function(x, y) merge(x, y,by = "Var1", all.x = T), list(as.data.frame(table(ann_ALX1$Annotation2)),
-as.data.frame(table(ann_ALX3$Annotation2)),
-as.data.frame(table(ann_ALX4$Annotation2)),
-as.data.frame(table(ann_GBX2$Annotation2)),
-as.data.frame(table(ann_SOX10$Annotation2)),
-as.data.frame(table(ann_ETS1$Annotation2)),
-as.data.frame(table(ann_TFEC$Annotation2)),
-as.data.frame(table(ann_MITF$Annotation2)),
-as.data.frame(table(ann_FOXD3$Annotation2))))
-
-Annotation_merged[is.na(Annotation_merged)] <-0
-colnames(Annotation_merged) <- c("Annotation","ALX1","ALX3","ALX4","GBX2","SOX10","ETS1","TFEC","MITF","FOXD3")
-str(Annotation_merged)
-
-Annotation_merged$ALX1 <-  Annotation_merged$ALX1/sum(Annotation_merged$ALX1)*100
-Annotation_merged$ALX3 <-  Annotation_merged$ALX3/sum(Annotation_merged$ALX3)*100
-Annotation_merged$ALX4 <-  Annotation_merged$ALX4/sum(Annotation_merged$ALX4)*100
-Annotation_merged$GBX2 <-  Annotation_merged$GBX2/sum(Annotation_merged$GBX2)*100
-Annotation_merged$ETS1 <-  Annotation_merged$ETS1/sum(Annotation_merged$ETS1)*100
-Annotation_merged$SOX10 <-  Annotation_merged$SOX10/sum(Annotation_merged$SOX10)*100
-Annotation_merged$TFEC<-  Annotation_merged$TFEC/sum(Annotation_merged$TFEC)*100
-Annotation_merged$MITF<-  Annotation_merged$MITF/sum(Annotation_merged$MITF)*100
-Annotation_merged$FOXD3<-  Annotation_merged$FOXD3/sum(Annotation_merged$FOXD3)*100
-
-
-Amelt <- melt(Annotation_merged,id.vars = "Annotation")
-colnames(Amelt)[2]<- "Type"
-Amelt$Type <- factor(Amelt$Type, levels = c("ALX1","ALX3","ALX4","GBX2","SOX10","ETS1","TFEC","MITF","FOXD3"))
-Amelt$Annotation <- factor(Amelt$Annotation, levels = c("non-coding","Intergenic","promoter-TSS","5' UTR","exon","intron","3' UTR","TTS"))
-mypalette <-c("#740001","#ae0001","#e35d6a","#ffdfba","#ffffba","#baffc9","#bae1ff","#428bca","#d896ff")
-p <- ggplot(Amelt, aes(x=Annotation, y=value, fill=Type)) +geom_bar(stat="identity",colour = "black", position=position_dodge())+ggtitle("Annotation of Regions with Motifs")+theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 16), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
-      labs(x = "Annotation", y = "Percent of DMARs")+scale_fill_manual(values = mypalette)+scale_color_manual(values=mypalette)+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))+ theme(legend.title=element_text(size=16,face = "bold"),legend.text=element_text(size=12,face = "bold"))
-p
-
-#enrichment
-enr_ALX1 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_ALX1_PostPr_0.95..annstats", sep = "\t", header = T, quote = "", stringsAsFactors = F,nrow = 10)
-enr_ALX3 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_ALX3_PostPr_0.95..annstats", sep = "\t", header = T, quote = "", stringsAsFactors = F,nrow = 10)
-enr_ALX4 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_ALX4_PostPr_0.95..annstats", sep = "\t", header = T, quote = "", stringsAsFactors = F,nrow = 10)
-enr_GBX2 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_GBX2_PostPr_0.95..annstats", sep = "\t", header = T, quote = "", stringsAsFactors = F,nrow = 10)
-enr_ETS1 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_ETS1_PostPr_0.95..annstats", sep = "\t", header = T, quote = "", stringsAsFactors = F,nrow = 9)
-enr_SOX10 <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_SOX10_PostPr_0.95..annstats", sep = "\t", header = T, quote = "", stringsAsFactors = F,nrow = 10)
-enr_TFEC <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/DMAR_Iri_Accesible_TFEC_PostPr_0.95..annstats", sep = "\t", header = T, quote = "", stringsAsFactors = F,nrow = 10)
-enr_ETS1<-rbind(enr_ETS1,c("snRNA","0","0",-5.209))
-enrich <- data.frame(enr_ALX1$Annotation,enr_ALX1$Log2.Enrichment,enr_ALX3$Log2.Enrichment,enr_ALX4$Log2.Enrichment,enr_GBX2$Log2.Enrichment,enr_SOX10$Log2.Enrichment,enr_ETS1$Log2.Enrichment,enr_TFEC$Log2.Enrichment)
-colnames(enrich) <- c("Annotation","ALX1","ALX3","ALX4","GBX2","SOX10","ETS1","TFEC")
-Emelt <- melt(enrich,id.vars = "Annotation")
-Emelt$variable<- factor(Emelt$variable, levels = c("ALX1","ALX3","ALX4","GBX2","SOX10","ETS1","TFEC"))
-Emelt$Annotation <- factor(Emelt$Annotation, levels = c("Intergenic","Promoter","Exon","Intron","5UTR","3UTR","TTS","ncRNA","snRNA","pseudo"))
-mypalette <-c("#740001","#ae0001","#e35d6a","#ffdfba","#ffffba","#baffc9","#bae1ff","#428bca","#d896ff")
-p <- ggplot(Emelt, aes(x=Annotation, y=as.numeric(value), fill=variable)) +geom_bar(stat="identity",colour = "black", position=position_dodge())+ggtitle("Annotation Enrichment of Regions with Motifs")+theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 16), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
-      labs(x = "Annotation", y = "Fold Enrichment")+scale_fill_manual(values = mypalette)+scale_color_manual(values=mypalette)+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))+ theme(legend.title=element_text(size=16,face = "bold"),legend.text=element_text(size=12,face = "bold"))
-p+ geom_hline(yintercept=1,linetype = 2, lwd = 1.5, col = "dark grey")
-
-
-
-
-
-##how many DMARS (centipede) with motif near DEG promoters 
-bedtools intersect -wo -a Combined_analysis/DMAR_DEG_ALX/Iri_DEGs_on_promoter_50kb_extended.bed -b Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/CentipedeMotif_DMAR_Iri_accessible_info.noheader.bed > Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/CentipedeMotif_DMAR_Iri_accessible_info_DEGs_on_prom_50kb.bed
-
-Iri_DEG_on_prom50kb_CENT_motif <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/CentipedeMotif_DMAR_Iri_accessible_info_DEGs_on_prom_50kb.bed", sep = "\t", header = F, stringsAsFactors =F, quote = "")
-
-colnames(Iri_DEG_on_prom50kb_CENT_motif) <-c("chrom", "start50kb","end50kb","gene","genename",colnames(CENT_DMAR_Iri_accessible[,c(2,3,4,1,5:43)]),"overlap")
-
-Iri_DEG_on_prom50kb_CENT_motif_wExpression <- merge(Iri_DEG_on_prom50kb_CENT_motif,DEG2,by = "gene", all.x = T)
-
-Iri_DEG_on_prom50kb_CENT_motif_filtered <- Iri_DEG_on_prom50kb_CENT_motif_wExpression[Iri_DEG_on_prom50kb_CENT_motif_wExpression$ALX1 >0 | Iri_DEG_on_prom50kb_CENT_motif_wExpression$ALX3 >0 | Iri_DEG_on_prom50kb_CENT_motif_wExpression$ALX4 >0 | Iri_DEG_on_prom50kb_CENT_motif_wExpression$GBX2 >0 | Iri_DEG_on_prom50kb_CENT_motif_wExpression$ETS1 >0 | Iri_DEG_on_prom50kb_CENT_motif_wExpression$SOX10 >0 | Iri_DEG_on_prom50kb_CENT_motif_wExpression$TFEC >0 | Iri_DEG_on_prom50kb_CENT_motif_wExpression$FOXD3 >0 ,]
-
-Iri_DEG_on_prom50kb_CENT_motif_filtered[Iri_DEG_on_prom50kb_CENT_motif_filtered$gene == "ENSDARG00000091086",]$genename.x <- "alx3"
-
-
-Small_mlc_biosyn <- c("ENSDARG00000001873","ENSDARG00000004979","ENSDARG00000005897","ENSDARG00000006031","ENSDARG00000007366","ENSDARG00000008310","ENSDARG00000010267","ENSDARG00000010862","ENSDARG00000012076","ENSDARG00000013721","ENSDARG00000014866","ENSDARG00000015623","ENSDARG00000016375","ENSDARG00000016733","ENSDARG00000017444","ENSDARG00000019613","ENSDARG00000020956","ENSDARG00000021154","ENSDARG00000023176","ENSDARG00000023287","ENSDARG00000025012","ENSDARG00000031616","ENSDARG00000032206","ENSDARG00000033361","ENSDARG00000033413","ENSDARG00000033594","ENSDARG00000035872","ENSDARG00000036239","ENSDARG00000036833","ENSDARG00000037551","ENSDARG00000038297","ENSDARG00000038865","ENSDARG00000039429","ENSDARG00000039914","ENSDARG00000040314","ENSDARG00000040492","ENSDARG00000040869","ENSDARG00000042221","ENSDARG00000042856","ENSDARG00000043457")
-nitrogen_compound_cat <- c("ENSDARG00000004979","ENSDARG00000005897","ENSDARG00000007366","ENSDARG00000008310","ENSDARG00000010267","ENSDARG00000012076","ENSDARG00000013721","ENSDARG00000014866","ENSDARG00000015623","ENSDARG00000017444","ENSDARG00000019613","ENSDARG00000021154","ENSDARG00000023176","ENSDARG00000025012","ENSDARG00000031616","ENSDARG00000033413","ENSDARG00000033594","ENSDARG00000036833","ENSDARG00000037551","ENSDARG00000038297","ENSDARG00000039429","ENSDARG00000039914","ENSDARG00000040492","ENSDARG00000040869","ENSDARG00000042221","ENSDARG00000042856","ENSDARG00000043457","ENSDARG00000001953","ENSDARG00000002986","ENSDARG00000003311","ENSDARG00000003961","ENSDARG00000005034","ENSDARG00000005464","ENSDARG00000006491","ENSDARG00000007494","ENSDARG00000008153","ENSDARG00000008931","ENSDARG00000009612","ENSDARG00000010130","ENSDARG00000011506","ENSDARG00000012355","ENSDARG00000014572","ENSDARG00000015524","ENSDARG00000016835","ENSDARG00000017049","ENSDARG00000018329","ENSDARG00000019207","ENSDARG00000023448","ENSDARG00000025094","ENSDARG00000028628","ENSDARG00000029075","ENSDARG00000029621","ENSDARG00000030340","ENSDARG00000030598","ENSDARG00000032116","ENSDARG00000033539","ENSDARG00000033666","ENSDARG00000034262","ENSDARG00000035555","ENSDARG00000036282","ENSDARG00000037064","ENSDARG00000037101","ENSDARG00000037191","ENSDARG00000038293","ENSDARG00000038524","ENSDARG00000038533","ENSDARG00000042124","ENSDARG00000042562")
-lipid_metabolic <- c("ENSDARG00000004979","ENSDARG00000012076","ENSDARG00000033413","ENSDARG00000037551","ENSDARG00000005034","ENSDARG00000006491","ENSDARG00000008153","ENSDARG00000010130","ENSDARG00000011506","ENSDARG00000014572","ENSDARG00000019207","ENSDARG00000029621","ENSDARG00000033666","ENSDARG00000034262","ENSDARG00000035555","ENSDARG00000037064","ENSDARG00000037101","ENSDARG00000037191","ENSDARG00000038524","ENSDARG00000023287","ENSDARG00000035872","ENSDARG00000038865","ENSDARG00000003584","ENSDARG00000003635","ENSDARG00000007108","ENSDARG00000012194","ENSDARG00000012829","ENSDARG00000013711","ENSDARG00000017811","ENSDARG00000017882","ENSDARG00000018361","ENSDARG00000019228","ENSDARG00000020509","ENSDARG00000023820","ENSDARG00000025555","ENSDARG00000027469","ENSDARG00000032816","ENSDARG00000035544","ENSDARG00000036415","ENSDARG00000036636","ENSDARG00000040248","ENSDARG00000040469","ENSDARG00000042780")
-purine_nucle_meta <- c("ENSDARG00000037551","ENSDARG00000037191","ENSDARG00000010267","ENSDARG00000015623","ENSDARG00000039429","ENSDARG00000040492","ENSDARG00000042221","ENSDARG00000002986","ENSDARG00000009612","ENSDARG00000015524","ENSDARG00000017049","ENSDARG00000018329","ENSDARG00000030340","ENSDARG00000033539","ENSDARG00000038293","ENSDARG00000042124","ENSDARG00000042562","ENSDARG00000010862","ENSDARG00000013561","ENSDARG00000032868")
-guanine_synthesis <- c("ENSDARG00000011683","ENSDARG00000014866","ENSDARG00000079848","ENSDARG00000029524","ENSDARG00000016706","ENSDARG00000033539","ENSDARG00000101089","ENSDARG00000003750","ENSDARG00000004517","ENSDARG00000099222","ENSDARG00000056640","ENSDARG00000039452","ENSDARG00000012987","ENSDARG00000013561","ENSDARG00000018178","ENSDARG00000028000","ENSDARG00000012801","ENSDARG00000057661","ENSDARG00000025012","ENSDARG00000040988","ENSDARG00000005897","ENSDARG00000043457","ENSDARG00000054191","ENSDARG00000001873","ENSDARG00000104414","ENSDARG00000052816","ENSDARG00000040314","ENSDARG00000018266","ENSDARG00000040492","ENSDARG00000098646","ENSDARG00000016733","ENSDARG00000100003","ENSDARG00000099776","ENSDARG00000042336","ENSDARG00000019702","ENSDARG00000103826","ENSDARG00000005423","ENSDARG00000039007","ENSDARG00000020956","ENSDARG00000099730","ENSDARG00000099860","ENSDARG00000019644","ENSDARG00000071076","ENSDARG00000099079","ENSDARG00000055652","ENSDARG00000017772","ENSDARG00000103849","ENSDARG00000017049","ENSDARG00000104487","ENSDARG00000075132")
-
-
-#small mlc (10 x10)
-Iri_DEG_on_prom50kb_CENT_motif_filtered_Small_mlc <- Iri_DEG_on_prom50kb_CENT_motif_filtered[Iri_DEG_on_prom50kb_CENT_motif_filtered$gene %in% Small_mlc_biosyn,]
-
-name <- make.unique(Iri_DEG_on_prom50kb_CENT_motif_filtered_Small_mlc[,"chrompos"])
-df.OG2 <- Iri_DEG_on_prom50kb_CENT_motif_filtered_Small_mlc[,c(39,40,41,42,43,44,45,47)] #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_DEG_on_prom50kb_CENT_motif_filtered_Small_mlc[,c(39,40,41,42,43,44,45,47)])
-ht2 = Heatmap(df.OG2, column_title = "Small Molecule Biosynthesis DMARs\n(50kb from DEG promoter)",name= "Motif\nOccurrence",col = c("#fffef2","#0084a1"),row_names_side = "left",row_names_max_width = unit(20, "cm"),
-    cluster_rows = F, cluster_columns = F,show_row_names = T,clustering_method_rows= "ward.D",row_dend_side = c("right"),)
-ht2
-
-df.OG2 <- Iri_DEG_on_prom50kb_CENT_motif_filtered_Small_mlc[,c("Annotation")] #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- "Annotation"
-ht = Heatmap(df.OG2,name= "Annotation",col = c("#ffdfba", "#ffffba"),
-    cluster_rows = F, cluster_columns = F,show_row_names=F)
-ht
-
-name <- make.unique(Iri_DEG_on_prom50kb_CENT_motif_filtered_Small_mlc[,"genename.x"])
-df.OG2 <- as.data.frame(Iri_DEG_on_prom50kb_CENT_motif_filtered_Small_mlc[,c("Type")]) #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_DEG_on_prom50kb_CENT_motif_filtered_Small_mlc[,c("Type")])
-ht1 = Heatmap(df.OG2,name= "Type",col = c("#d2a8dd","#ffe3d6"),
-    cluster_rows = F, cluster_columns = F,show_row_names=F)
-ht1
-
-df.OG2 <- as.data.frame(Iri_DEG_on_prom50kb_CENT_motif_filtered_Small_mlc[,c("s24vIri_log2_change")]) #Motif occurrence
-df.OG2 <- df.OG2*-1
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_DEG_on_prom50kb_CENT_motif_filtered_Small_mlc[,c("s24vIri_log2_change")])
-ht3=  Heatmap(df.OG2,name= "Fold Change",col = colorRamp2(c(-5, 0, 5), c("#baffc9", "#fffef2","#450165")), 
-    cluster_rows = F,show_row_names=F, cluster_columns = FALSE)+scale_x_discrete(labels=c("s24vIri_log2_change" = "24hpf vs Iri"))
-ht3
-
-df.OG2 <- as.data.frame(Iri_DEG_on_prom50kb_CENT_motif_filtered_Small_mlc[,c("s24","Iri")]) #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_DEG_on_prom50kb_CENT_motif_filtered_Small_mlc[,c("s24","Iri")])
-ht4=  Heatmap(df.OG2,name= "RPKM",col = colorRamp2(c(0,50,200,300,400), c("#bae1ff","#ffffba","#ffb3ba","#e0301e","#800000")), cluster_rows = F, cluster_columns = FALSE)
-ht4
-
-ht2+ht+ht1+ht3+ht4
-
-#Purine
-Iri_DEG_on_prom50kb_CENT_motif_filtered_purine <- Iri_DEG_on_prom50kb_CENT_motif_filtered[Iri_DEG_on_prom50kb_CENT_motif_filtered$gene %in% purine_nucle_meta,]
-
-name <- make.unique(Iri_DEG_on_prom50kb_CENT_motif_filtered_purine[,"chrompos"])
-df.OG2 <- Iri_DEG_on_prom50kb_CENT_motif_filtered_purine[,c(39,40,41,42,43,44,45,47)] #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_DEG_on_prom50kb_CENT_motif_filtered_purine[,c(39,40,41,42,43,44,45,47)])
-ht2 = Heatmap(df.OG2, column_title = "Purine Metabolics DMARs\n(50kb from DEG promoter)",name= "Motif\nOccurrence",col = c("#fffef2","#0084a1"),row_names_side = "left",row_names_max_width = unit(20, "cm"),
-    cluster_rows = F, cluster_columns = F,show_row_names = T,clustering_method_rows= "ward.D",row_dend_side = c("right"),)
-ht2
-
-name <- make.unique(Iri_DEG_on_prom50kb_CENT_motif_filtered_purine[,"genename.x"])
-df.OG2 <- Iri_DEG_on_prom50kb_CENT_motif_filtered_purine[,c("Annotation")] #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- "Annotation"
-ht = Heatmap(df.OG2,name= "Annotation",col = c("#ffb3ba","#ffdfba", "#ffffba"),
-    cluster_rows = F, cluster_columns = F,show_row_names=F)
-ht
-
-df.OG2 <- as.data.frame(Iri_DEG_on_prom50kb_CENT_motif_filtered_purine[,c("Type")]) #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_DEG_on_prom50kb_CENT_motif_filtered_purine[,c("Type")])
-ht1 = Heatmap(df.OG2,name= "Type",col = c("#d2a8dd","#a6fdfc","#ffe3d6"),
-    cluster_rows = F, cluster_columns = F,show_row_names=F)
-ht1
-
-df.OG2 <- as.data.frame(Iri_DEG_on_prom50kb_CENT_motif_filtered_purine[,c("s24vIri_log2_change")]) #Motif occurrence
-df.OG2 <- df.OG2*-1
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_DEG_on_prom50kb_CENT_motif_filtered_purine[,c("s24vIri_log2_change")])
-ht3=  Heatmap(df.OG2,name= "Fold Change",col = colorRamp2(c(-5, 0, 5), c("#baffc9", "#fffef2","#450165")), 
-    cluster_rows = F,show_row_names=F, cluster_columns = FALSE)+scale_x_discrete(labels=c("s24vIri_log2_change" = "24hpf vs Iri"))
-ht3
-
-df.OG2 <- as.data.frame(Iri_DEG_on_prom50kb_CENT_motif_filtered_purine[,c("s24","Iri")]) #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_DEG_on_prom50kb_CENT_motif_filtered_purine[,c("s24","Iri")])
-ht4=  Heatmap(df.OG2,name= "RPKM",col = colorRamp2(c(0,50,200,300,400), c("#bae1ff","#ffffba","#ffb3ba","#e0301e","#800000")), cluster_rows = F, cluster_columns = FALSE)
-ht4
-
-ht2+ht+ht1+ht3+ht4
-
-#Lipid
-Iri_DEG_on_prom50kb_CENT_motif_filtered_lipid <- Iri_DEG_on_prom50kb_CENT_motif_filtered[Iri_DEG_on_prom50kb_CENT_motif_filtered$gene %in% lipid_metabolic,]
-
-name <- make.unique(Iri_DEG_on_prom50kb_CENT_motif_filtered_lipid[,"chrompos"])
-df.OG2 <- Iri_DEG_on_prom50kb_CENT_motif_filtered_lipid[,c(39,40,41,42,43,44,45,47)] #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_DEG_on_prom50kb_CENT_motif_filtered_lipid[,c(39,40,41,42,43,44,45,47)])
-ht2 = Heatmap(df.OG2, column_title = "Lipid Metabolics DMARs\n(50kb from DEG promoter)",name= "Motif\nOccurrence",col = c("#fffef2","#0084a1"),row_names_side = "left",row_names_max_width = unit(20, "cm"),
-    cluster_rows = F, cluster_columns = F,show_row_names = T,clustering_method_rows= "ward.D",row_dend_side = c("right"),)
-ht2
-
-name <- make.unique(Iri_DEG_on_prom50kb_CENT_motif_filtered_lipid[,"genename.x"])
-df.OG2 <- Iri_DEG_on_prom50kb_CENT_motif_filtered_lipid[,c("Annotation")] #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- "Annotation"
-ht = Heatmap(df.OG2,name= "Annotation",col = c("#ffdfba", "#ffffba"),
-    cluster_rows = F, cluster_columns = F,show_row_names=F)
-ht
-
-df.OG2 <- as.data.frame(Iri_DEG_on_prom50kb_CENT_motif_filtered_lipid[,c("Type")]) #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_DEG_on_prom50kb_CENT_motif_filtered_lipid[,c("Type")])
-ht1 = Heatmap(df.OG2,name= "Type",col = c("#d2a8dd","#a6fdfc"),
-    cluster_rows = F, cluster_columns = F,show_row_names=F)
-ht1
-
-df.OG2 <- as.data.frame(Iri_DEG_on_prom50kb_CENT_motif_filtered_lipid[,c("s24vIri_log2_change")]) #Motif occurrence
-df.OG2 <- df.OG2*-1
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_DEG_on_prom50kb_CENT_motif_filtered_lipid[,c("s24vIri_log2_change")])
-ht3=  Heatmap(df.OG2,name= "Fold Change",col = colorRamp2(c(-5, 0, 5), c("#baffc9", "#fffef2","#450165")), 
-    cluster_rows = F,show_row_names=F, cluster_columns = FALSE)+scale_x_discrete(labels=c("s24vIri_log2_change" = "24hpf vs Iri"))
-ht3
-
-df.OG2 <- as.data.frame(Iri_DEG_on_prom50kb_CENT_motif_filtered_lipid[,c("s24","Iri")]) #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_DEG_on_prom50kb_CENT_motif_filtered_lipid[,c("s24","Iri")])
-ht4=  Heatmap(df.OG2,name= "RPKM",col = colorRamp2(c(0,50,200,300,400), c("#bae1ff","#ffffba","#ffb3ba","#e0301e","#800000")), cluster_rows = F, cluster_columns = FALSE)
-ht4
-
-ht2+ht+ht1+ht3+ht4
-
-#guanine
-Iri_DEG_on_prom50kb_CENT_motif_filtered_guanine <- Iri_DEG_on_prom50kb_CENT_motif_filtered[Iri_DEG_on_prom50kb_CENT_motif_filtered$gene %in% guanine_synthesis,]
-
-name <- make.unique(Iri_DEG_on_prom50kb_CENT_motif_filtered_guanine[,"chrompos"])
-df.OG2 <- Iri_DEG_on_prom50kb_CENT_motif_filtered_guanine[,c(39,40,41,42,43,44,45,47)] #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_DEG_on_prom50kb_CENT_motif_filtered_guanine[,c(39,40,41,42,43,44,45,47)])
-ht2 = Heatmap(df.OG2, column_title = "Guanine Metabolics DMARs\n(50kb from DEG promoter)",name= "Motif\nOccurrence",col = c("#fffef2","#0084a1"),row_names_side = "left",row_names_max_width = unit(20, "cm"),
-    cluster_rows = F, cluster_columns = F,show_row_names = T,clustering_method_rows= "ward.D",row_dend_side = c("right"),)
-ht2
-
-name <- make.unique(Iri_DEG_on_prom50kb_CENT_motif_filtered_guanine[,"genename.x"])
-df.OG2 <- Iri_DEG_on_prom50kb_CENT_motif_filtered_guanine[,c("Annotation")] #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- "Annotation"
-ht = Heatmap(df.OG2,name= "Annotation",col = c("#ffb3ba","#ffdfba", "#ffffba","#baffc9","#bae1ff"),
-    cluster_rows = F, cluster_columns = F,show_row_names=F)
-ht
-
-df.OG2 <- as.data.frame(Iri_DEG_on_prom50kb_CENT_motif_filtered_guanine[,c("Type")]) #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_DEG_on_prom50kb_CENT_motif_filtered_guanine[,c("Type")])
-ht1 = Heatmap(df.OG2,name= "Type",col = c("#d2a8dd","#a6fdfc","#ffe3d6"),
-    cluster_rows = F, cluster_columns = F,show_row_names=F)
-ht1
-
-df.OG2 <- as.data.frame(Iri_DEG_on_prom50kb_CENT_motif_filtered_guanine[,c("s24vIri_log2_change")]) #Motif occurrence
-df.OG2 <- df.OG2*-1
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_DEG_on_prom50kb_CENT_motif_filtered_guanine[,c("s24vIri_log2_change")])
-ht3=  Heatmap(df.OG2,name= "Fold Change",col = colorRamp2(c(-5, 0, 5), c("#baffc9", "#fffef2","#450165")), 
-    cluster_rows = F,show_row_names=F, cluster_columns = FALSE)+scale_x_discrete(labels=c("s24vIri_log2_change" = "24hpf vs Iri"))
-ht3
-
-df.OG2 <- as.data.frame(Iri_DEG_on_prom50kb_CENT_motif_filtered_guanine[,c("s24","Iri")]) #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_DEG_on_prom50kb_CENT_motif_filtered_guanine[,c("s24","Iri")])
-ht4=  Heatmap(df.OG2,name= "RPKM",col = colorRamp2(c(0,50,200,300,400), c("#bae1ff","#ffffba","#ffb3ba","#e0301e","#800000")), cluster_rows = F, cluster_columns = FALSE)
-ht4
-
-ht2+ht+ht1+ht3+ht4
-
-#nitrogen
-Iri_DEG_on_prom50kb_CENT_motif_filtered_nitrogen <- Iri_DEG_on_prom50kb_CENT_motif_filtered[Iri_DEG_on_prom50kb_CENT_motif_filtered$gene %in% nitrogen_compound_cat,]
-
-name <- make.unique(Iri_DEG_on_prom50kb_CENT_motif_filtered_nitrogen[,"chrompos"])
-df.OG2 <- Iri_DEG_on_prom50kb_CENT_motif_filtered_nitrogen[,c(39,40,41,42,43,44,45,47)] #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_DEG_on_prom50kb_CENT_motif_filtered_nitrogen[,c(39,40,41,42,43,44,45,47)])
-ht2 = Heatmap(df.OG2, column_title = "Nitrogen Catabolics DMARs\n(50kb from DEG promoter)",name= "Motif\nOccurrence",col = c("#fffef2","#0084a1"),row_names_side = "left",row_names_max_width = unit(20, "cm"),
-    cluster_rows = F, cluster_columns = F,show_row_names = T,clustering_method_rows= "ward.D",row_dend_side = c("right"),)
-ht2
-
-name <- make.unique(Iri_DEG_on_prom50kb_CENT_motif_filtered_nitrogen[,"genename.x"])
-df.OG2 <- Iri_DEG_on_prom50kb_CENT_motif_filtered_nitrogen[,c("Annotation")] #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- "Annotation"
-ht = Heatmap(df.OG2,name= "Annotation",col = c("#ffb3ba","#ffdfba", "#ffffba"),
-    cluster_rows = F, cluster_columns = F,show_row_names=F)
-ht
-
-df.OG2 <- as.data.frame(Iri_DEG_on_prom50kb_CENT_motif_filtered_nitrogen[,c("Type")]) #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_DEG_on_prom50kb_CENT_motif_filtered_nitrogen[,c("Type")])
-ht1 = Heatmap(df.OG2,name= "Type",col = c("#d2a8dd","#a6fdfc","#ffe3d6"),
-    cluster_rows = F, cluster_columns = F,show_row_names=F)
-ht1
-
-df.OG2 <- as.data.frame(Iri_DEG_on_prom50kb_CENT_motif_filtered_nitrogen[,c("s24vIri_log2_change")]) #Motif occurrence
-df.OG2 <- df.OG2*-1
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_DEG_on_prom50kb_CENT_motif_filtered_nitrogen[,c("s24vIri_log2_change")])
-ht3=  Heatmap(df.OG2,name= "Fold Change",col = colorRamp2(c(-5, 0, 5), c("#baffc9", "#fffef2","#450165")), 
-    cluster_rows = F,show_row_names=F, cluster_columns = FALSE)+scale_x_discrete(labels=c("s24vIri_log2_change" = "24hpf vs Iri"))
-ht3
-
-df.OG2 <- as.data.frame(Iri_DEG_on_prom50kb_CENT_motif_filtered_nitrogen[,c("s24","Iri")]) #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_DEG_on_prom50kb_CENT_motif_filtered_nitrogen[,c("s24","Iri")])
-ht4=  Heatmap(df.OG2,name= "RPKM",col = colorRamp2(c(0,50,200,300,400), c("#bae1ff","#ffffba","#ffb3ba","#e0301e","#800000")), cluster_rows = F, cluster_columns = FALSE)
-ht4
 
 ht2+ht+ht1+ht3+ht4
 
 
 
-#TFs only 
-bedtools intersect -wo -a Combined_analysis/DMAR_DEG_ALX/Iri_MarkerGenes_promoter_50kb_extended.bed -b Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/CentipedeMotif_DMAR_Iri_accessible_info.noheader.bed > Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/CentipedeMotif_DMAR_Iri_accessible_info_MarkerGenes_prom_50kb.bed
 
-Iri_MarkerGene_prom50kb_CENT_motif <- read.table("Combined_analysis/centipede_motif_footprint/Centipede_high_confidence_motif/CentipedeMotif_DMAR_Iri_accessible_info_MarkerGenes_prom_50kb.bed", sep = "\t", header = F, stringsAsFactors =F, quote = "")
+################# DMR, DAR and DMAR correlate with gene expression #####################
+DMAR <- read.table("All_DMAR_Combined_wINFO_NEW_042620.bed",sep = "\t",header =T, stringsAsFactors =F)
+DEG <- read.table("/scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/RNA_only/DESeq2_051718/DEGs_combined_samples_p0.01.txt",sep = "\t",header =T, stringsAsFactors =F)
 
-colnames(Iri_MarkerGene_prom50kb_CENT_motif) <-c("chrom", "start50kb","end50kb","gene","genename",colnames(CENT_DMAR_Iri_accessible[,c(2,3,4,1,5:43)]),"overlap")
+DEG_TPM <- merge(DEG,geneTPM,by="gene")
+DEG_TPM <- DEG_TPM[DEG_TPM$s15 >5 | DEG_TPM$s24 >5 | DEG_TPM$Mel >5 | DEG_TPM$Iri >5,]
+DEG_TPM<-DEG_TPM[complete.cases(DEG_TPM),]
 
-Iri_MarkerGene_prom50kb_CENT_motif_wExpression <- merge(Iri_MarkerGene_prom50kb_CENT_motif,DEG2,by = "gene", all.x = T)
+hypoDMR_s15vs24 <- DMAR[DMAR$DMRs15vs24 >0,]
+hyperDMR_s15vs24 <- DMAR[DMAR$DMRs15vs24 <0,]
+hypoDMR_s24vsMel <- DMAR[DMAR$DMRs24vMel >0,]
+hyperDMR_s24vsMel <- DMAR[DMAR$DMRs24vMel <0,]
+hypoDMR_s24vsIri <- DMAR[DMAR$DMRs24vIri >0,]
+hyperDMR_s24vsIri <- DMAR[DMAR$DMRs24vIri <0,]
 
-Iri_MarkerGene_prom50kb_CENT_motif_filtered <- Iri_MarkerGene_prom50kb_CENT_motif_wExpression[Iri_MarkerGene_prom50kb_CENT_motif_wExpression$total >0,]
-
-Iri_DEG_Marker_prom50kb_CENT_motif_filtered<-Iri_DEG_on_prom50kb_CENT_motif_filtered[Iri_DEG_on_prom50kb_CENT_motif_filtered$genename.x  == "alx1" | Iri_DEG_on_prom50kb_CENT_motif_filtered$genename.x  == "alx3"| Iri_DEG_on_prom50kb_CENT_motif_filtered$genename.x  == "alx4a" | Iri_DEG_on_prom50kb_CENT_motif_filtered$genename.x  == "alx4b" | Iri_DEG_on_prom50kb_CENT_motif_filtered$genename.x  == "ltk"| Iri_DEG_on_prom50kb_CENT_motif_filtered$genename.x  == "ednrba" | Iri_DEG_on_prom50kb_CENT_motif_filtered$genename.x  == "pnp4a",]
-
-Iri_AllMarkerGene_prom50kb_CENT_motif_filtered<-rbind(Iri_MarkerGene_prom50kb_CENT_motif_filtered,Iri_DEG_Marker_prom50kb_CENT_motif_filtered)
-
-Iri_AllMarkerGene_prom50kb_CENT_motif_filtered[is.na(Iri_AllMarkerGene_prom50kb_CENT_motif_filtered)] <-0
-
-Iri_TF_prom50kb_CENT_motif_filtered<-Iri_AllMarkerGene_prom50kb_CENT_motif_filtered[Iri_AllMarkerGene_prom50kb_CENT_motif_filtered$genename.x != "ltk" & Iri_AllMarkerGene_prom50kb_CENT_motif_filtered$genename.x != "pnp4a",]
-
-Iri_TF_prom50kb_CENT_motif_filtered[Iri_TF_prom50kb_CENT_motif_filtered$genename.x == "CABZ01069595.1",]$genename.x <- "ets1"
-
-Iri_TF_prom50kb_CENT_motif_filtered<-Iri_TF_prom50kb_CENT_motif_filtered[order(Iri_TF_prom50kb_CENT_motif_filtered$genename.x),]
-
-Iri_TF_prom50kb_CENT_motif_filtered[Iri_TF_prom50kb_CENT_motif_filtered$genename.x == "foxd3",]$s24 <- (77.4+128)/2
-Iri_TF_prom50kb_CENT_motif_filtered[Iri_TF_prom50kb_CENT_motif_filtered$genename.x == "foxd3",]$Iri <- (59.2+7.32)/2
-
-name <- make.unique(Iri_TF_prom50kb_CENT_motif_filtered[,"chrompos"])
-df.OG2 <- Iri_TF_prom50kb_CENT_motif_filtered[,c(39,40,41,42,43,44,45,47)] #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_TF_prom50kb_CENT_motif_filtered[,c(39,40,41,42,43,44,45,47)])
-ht2 = Heatmap(df.OG2, column_title = "Iridophore TF DMARs\n(50kb from DEG promoter)",name= "Motif\nOccurrence",col = c("#fffef2","#0084a1"),row_names_side = "left",row_names_max_width = unit(20, "cm"),
-    cluster_rows = F, cluster_columns = F,show_row_names = T,clustering_method_rows= "ward.D",row_dend_side = c("right"),)
-ht2
-
-name <- make.unique(Iri_TF_prom50kb_CENT_motif_filtered[,"genename.x"])
-df.OG2 <- Iri_TF_prom50kb_CENT_motif_filtered[,c("Annotation")] #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- "Annotation"
-ht = Heatmap(df.OG2,name= "Annotation",col = c("#ffb3ba","#ffdfba", "#ffffba","#baffc9"),
-    cluster_rows = F, cluster_columns = F,show_row_names=F)
-ht
-
-df.OG2 <- as.data.frame(Iri_TF_prom50kb_CENT_motif_filtered[,c("Type")]) #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_TF_prom50kb_CENT_motif_filtered[,c("Type")])
-ht1 = Heatmap(df.OG2,name= "Type",col = c("#d2a8dd","#a6fdfc","#ffe3d6"),
-    cluster_rows = F, cluster_columns = F,show_row_names=F)
-ht1
-
-df.OG2 <- as.data.frame(Iri_TF_prom50kb_CENT_motif_filtered[,c("s24vIri_log2_change")]) #Motif occurrence
-df.OG2 <- df.OG2*-1
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_TF_prom50kb_CENT_motif_filtered[,c("s24vIri_log2_change")])
-ht3=  Heatmap(df.OG2,name= "Fold Change",col = colorRamp2(c(-5, 0, 5), c("#baffc9", "#fffef2","#450165")), 
-    cluster_rows = F,show_row_names=F, cluster_columns = FALSE)+scale_x_discrete(labels=c("s24vIri_log2_change" = "24hpf vs Iri"))
-ht3
-
-df.OG2 <- as.data.frame(Iri_TF_prom50kb_CENT_motif_filtered[,c("s24","Iri")]) #Motif occurrence
-row.names(df.OG2) <- name
-colnames(df.OG2) <- colnames(Iri_TF_prom50kb_CENT_motif_filtered[,c("s24","Iri")])
-ht4=  Heatmap(df.OG2,name= "RPKM",col = colorRamp2(c(0,50,200,300,400), c("#bae1ff","#ffffba","#ffb3ba","#e0301e","#800000")), cluster_rows = F, cluster_columns = FALSE)
-ht4
-
-ht2+ht+ht1+ht3+ht4
+openingDAR_s15vs24 <- DMAR[DMAR$DARs15vs24 >0,]
+closingDAR_s15vs24 <- DMAR[DMAR$DARs15vs24 <0,]
+openingDAR_s24vsMel <- DMAR[DMAR$DARs24vMel >0,]
+closingDAR_s24vsMel <- DMAR[DMAR$DARs24vMel <0,]
+openingDAR_s24vsIri <- DMAR[DMAR$DARs24vIri >0,]
+closingDAR_s24vsIri <- DMAR[DMAR$DARs24vIri <0,]
+openingDAR_s24vsMI <- DMAR[DMAR$DARs24vMel >0 & DMAR$DARs24vIri >0,]
+closingDAR_s24vsMI <- DMAR[DMAR$DARs24vMel <0 & DMAR$DARs24vIri <0,]
+openingDAR_s24vsMel_specific <- DMAR[DMAR$DARs24vMel >0 & DMAR$DARs24vIri <=0,]
+closingDAR_s24vsMel_specific <- DMAR[DMAR$DARs24vMel <0 & DMAR$DARs24vIri >=0,]
+openingDAR_s24vsIri_specific <- DMAR[DMAR$DARs24vIri >0 & DMAR$DARs24vMel <=0,]
+closingDAR_s24vsIri_specific <- DMAR[DMAR$DARs24vIri <0 & DMAR$DARs24vMel >=0,]
 
 
+openingDMAR_s15vs24 <- DMAR[DMAR$DMRs15vs24 >0 & DMAR$DARs15vs24 >0,]
+closingDMAR_s15vs24 <- DMAR[DMAR$DMRs15vs24 <0 & DMAR$DARs15vs24 <0,]
+openingDMAR_s24vsMel <- DMAR[DMAR$DMRs24vMel >0 & DMAR$DARs24vMel >0,]# hypo opening
+closingDMAR_s24vsMel <- DMAR[DMAR$DMRs24vMel >0 & DMAR$DARs24vMel <0,]# hypo closing
+openingDMAR_s24vsIri <- DMAR[DMAR$DMRs24vIri >0 & DMAR$DARs24vIri >0,]# hypo opening
+closingDMAR_s24vsIri <- DMAR[DMAR$DMRs24vIri >0 & DMAR$DARs24vIri <0,]# hypo closing
+
+openingDMAR_s24vsMI <- DMAR[DMAR$DMRs24vMel >0 & DMAR$DARs24vMel >0 & DMAR$DMRs24vIri >0 & DMAR$DARs24vIri >0,]# hypo opening
+closingDMAR_s24vsMI <- DMAR[DMAR$DMRs24vMel >0 & DMAR$DARs24vMel <0 & DMAR$DMRs24vIri <0 & DMAR$DARs24vIri <0,]# hypo closing
+openingDMAR_s24vsMel_specific <- openingDMAR_s24vsMel[!(openingDMAR_s24vsMel$chrompos %in% openingDMAR_s24vsIri$chrompos),]# hypo opening
+closingDMAR_s24vsMel_specific <- closingDMAR_s24vsMel[!(closingDMAR_s24vsMel$chrompos %in% closingDMAR_s24vsIri$chrompos),]# hypo closing
+openingDMAR_s24vsIri_specific <- openingDMAR_s24vsIri[!(openingDMAR_s24vsIri$chrompos %in% openingDMAR_s24vsMel$chrompos),]# hypo opening
+closingDMAR_s24vsIri_specific <- closingDMAR_s24vsIri[!(closingDMAR_s24vsIri$chrompos %in% closingDMAR_s24vsMel$chrompos),]# hypo closing
+
+
+
+
+Gene.Prom <- read.table("Danio_rerio.GRCz10.85.GENE.PROMOTER.bed", sep = "\t", header =F, stringsAsFactors =F)
+
+Gene.Prom.DEG15v24 <- Gene.Prom[Gene.Prom$V4 %in% DEG_TPM[DEG_TPM$s15v24hpf_log2_change != 0,]$gene,]
+Gene.Prom.DEG24vMel <- Gene.Prom[Gene.Prom$V4 %in% DEG_TPM[DEG_TPM$s24vMel_log2_change != 0,]$gene,]
+Gene.Prom.DEG24vIri <- Gene.Prom[Gene.Prom$V4 %in% DEG_TPM[DEG_TPM$s24vIri_log2_change != 0,]$gene,]
+
+setwd("DMR_DAR_DMAR_GeneExpression")
+write.table(Gene.Prom.DEG15v24,"GRCz10.85.GENE.PROMOTER.DEGs15v24.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(Gene.Prom.DEG24vMel,"GRCz10.85.GENE.PROMOTER.DEGs24vMel.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(Gene.Prom.DEG24vIri,"GRCz10.85.GENE.PROMOTER.DEGs24vIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+
+write.table(hypoDMR_s15vs24,"hypoDMR_s15vs24.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(hyperDMR_s15vs24,"hyperDMR_s15vs24.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(hypoDMR_s24vsMel,"hypoDMR_s24vsMel.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(hyperDMR_s24vsMel,"hyperDMR_s24vsMel.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(hypoDMR_s24vsIri,"hypoDMR_s24vsIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(hyperDMR_s24vsIri,"hyperDMR_s24vsIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+
+write.table(openingDAR_s15vs24,"openingDAR_s15vs24.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(closingDAR_s15vs24,"closingDAR_s15vs24.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(openingDAR_s24vsMel,"openingDAR_s24vsMel.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(closingDAR_s24vsMel,"closingDAR_s24vsMel.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(openingDAR_s24vsIri,"openingDAR_s24vsIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(closingDAR_s24vsIri,"closingDAR_s24vsIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+
+write.table(openingDMAR_s15vs24,"openingDMAR_s15vs24.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(closingDMAR_s15vs24,"closingDMAR_s15vs24.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(openingDMAR_s24vsMel,"openingDMAR_s24vsMel.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(closingDMAR_s24vsMel,"closingDMAR_s24vsMel.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(openingDMAR_s24vsIri,"openingDMAR_s24vsIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(closingDMAR_s24vsIri,"closingDMAR_s24vsIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+
+
+bedtools closest -d -a hypoDMR_s15vs24.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs15v24.sorted.bed > hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed
+bedtools closest -d -a hyperDMR_s15vs24.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs15v24.sorted.bed > hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed
+bedtools closest -d -a hypoDMR_s24vsMel.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed > hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed
+bedtools closest -d -a hyperDMR_s24vsMel.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed > hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed
+bedtools closest -d -a hypoDMR_s24vsIri.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed > hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed
+bedtools closest -d -a hyperDMR_s24vsIri.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed > hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed
+
+bedtools closest -d -a openingDAR_s15vs24.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs15v24.sorted.bed > openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed
+bedtools closest -d -a closingDAR_s15vs24.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs15v24.sorted.bed > closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed
+bedtools closest -d -a openingDAR_s24vsMel.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed > openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed
+bedtools closest -d -a closingDAR_s24vsMel.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed > closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed
+bedtools closest -d -a openingDAR_s24vsIri.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed > openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed
+bedtools closest -d -a closingDAR_s24vsIri.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed > closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed
+
+bedtools closest -d -a openingDMAR_s15vs24.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs15v24.sorted.bed > openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed
+bedtools closest -d -a closingDMAR_s15vs24.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs15v24.sorted.bed > closingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed
+bedtools closest -d -a openingDMAR_s24vsMel.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed > openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed
+bedtools closest -d -a closingDMAR_s24vsMel.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed > closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed
+bedtools closest -d -a openingDMAR_s24vsIri.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed > openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed
+bedtools closest -d -a closingDMAR_s24vsIri.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed > closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed
+
+
+hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24 <- read.table("hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24 <- read.table("hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel <- read.table("hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel <- read.table("hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri <- read.table("hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri <- read.table("hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+
+openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24 <- read.table("openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24 <- read.table("closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel <- read.table("openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel <- read.table("closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri <- read.table("openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri <- read.table("closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+
+openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24 <- read.table("openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+closingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24 <- read.table("closingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel <- read.table("openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel <- read.table("closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri <- read.table("openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri <- read.table("closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+
+colnames(hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp <- merge(hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24,DEG_TPM,by = "gene")
+colnames(hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp <- merge(hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24,DEG_TPM,by = "gene")
+colnames(hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp <- merge(hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel,DEG_TPM,by = "gene")
+colnames(hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp <- merge(hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel,DEG_TPM,by = "gene")
+colnames(hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri ) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp <- merge(hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri,DEG_TPM,by = "gene")
+colnames(hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance") 
+hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp <- merge(hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri,DEG_TPM,by = "gene")
+
+a <- data.frame(hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$gene,hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$s15v24hpf_log2_change,hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$distance)
+a$type <- "hypoDMR"
+a$comp <- "s15v24"
+b <- data.frame(hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$gene,hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$s15v24hpf_log2_change,hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$distance)
+b$type <- "hyperDMR"
+b$comp <- "s15v24"
+c<- data.frame(hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$gene,hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$s24vMel_log2_change ,hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$distance)
+c$type <- "hypoDMR"
+c$comp <- "s24vMel"
+d<- data.frame(hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$gene,hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$s24vMel_log2_change,hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$distance)
+d$type <- "hyperDMR"
+d$comp <- "s24vMel"
+e<- data.frame(hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$gene,hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$s24vIri_log2_change,hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$distance)
+e$type <- "hypoDMR"
+e$comp <- "s24vIri"
+f<- data.frame(hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$gene,hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$s24vIri_log2_change,hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$distance)
+f$type <- "hyperDMR"
+f$comp <- "s24vIri"
+
+colnames(openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp <- merge(openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24,DEG_TPM,by = "gene")
+colnames(closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp <- merge(closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24,DEG_TPM,by = "gene")
+colnames(openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp <- merge(openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel,DEG_TPM,by = "gene")
+colnames(closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp <- merge(closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel,DEG_TPM,by = "gene")
+colnames(openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri ) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp <- merge(openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri,DEG_TPM,by = "gene")
+colnames(closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp <- merge(closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri,DEG_TPM,by = "gene")
+
+aa <- data.frame(openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$gene,openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$s15v24hpf_log2_change,openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$distance)
+aa$type <- "openingDAR"
+aa$comp <- "s15v24"
+bb <- data.frame(closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$gene,closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$s15v24hpf_log2_change,closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$distance)
+bb$type <- "closingDAR"
+bb$comp <- "s15v24"
+cc<- data.frame(openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$gene,openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$s24vMel_log2_change ,openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$distance)
+cc$type <- "openingDAR"
+cc$comp <- "s24vMel"
+dd<- data.frame(closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$gene,closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$s24vMel_log2_change ,closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$distance)
+dd$type <- "closingDAR"
+dd$comp <- "s24vMel"
+ee<- data.frame(openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$gene,openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$s24vIri_log2_change,openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$distance)
+ee$type <- "openingDAR"
+ee$comp <- "s24vIri"
+ff<- data.frame(closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$gene,closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$s24vIri_log2_change,closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$distance)
+ff$type <- "closingDAR"
+ff$comp <- "s24vIri"
+
+colnames(openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp <- merge(openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24,DEG_TPM,by = "gene")
+colnames(closingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+closingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp <- merge(closingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24,DEG_TPM,by = "gene")
+colnames(openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")#4773
+openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp <- merge(openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel,DEG_TPM,by = "gene")
+colnames(closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")#1635
+closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp <- merge(closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel,DEG_TPM,by = "gene")
+colnames(openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri ) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")#5862
+openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp <- merge(openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri,DEG_TPM,by = "gene")
+colnames(closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")#1191
+closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp <- merge(closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri,DEG_TPM,by = "gene")
+
+aaa <- data.frame(openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$gene,openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$s15v24hpf_log2_change,openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$distance)
+aaa$type <- "openingDMAR"
+aaa$comp <- "s15v24"
+bbb <- data.frame("0",0,0)
+bbb$type <- "closingDMAR"
+bbb$comp <- "s15v24"
+ccc<- data.frame(openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$gene,openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$s24vMel_log2_change ,openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$distance)
+ccc$type <- "openingDMAR"
+ccc$comp <- "s24vMel"
+ddd<- data.frame(closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$gene,closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$s24vMel_log2_change ,closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$distance)
+ddd$type <- "closingDMAR"
+ddd$comp <- "s24vMel"
+eee<- data.frame(openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$gene, openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$s24vIri_log2_change,openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$distance)
+eee$type <- "openingDMAR"
+eee$comp <- "s24vIri"
+fff<- data.frame(closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$gene,closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$s24vIri_log2_change,closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$distance)
+fff$type <- "closingDMAR"
+fff$comp <- "s24vIri"
+
+colnames(a)[1:3] <-c("gene","geneFC","distance")
+colnames(aa)[1:3] <-c("gene","geneFC","distance")
+colnames(aaa)[1:3] <-c("gene","geneFC","distance")
+colnames(b)[1:3] <-c("gene","geneFC","distance")
+colnames(bb)[1:3] <-c("gene","geneFC","distance")
+colnames(bbb)[1:3] <-c("gene","geneFC","distance")
+colnames(c)[1:3] <-c("gene","geneFC","distance")
+colnames(cc)[1:3] <-c("gene","geneFC","distance")
+colnames(ccc)[1:3] <-c("gene","geneFC","distance")
+colnames(d)[1:3] <-c("gene","geneFC","distance")
+colnames(dd)[1:3] <-c("gene","geneFC","distance")
+colnames(ddd)[1:3] <-c("gene","geneFC","distance")
+colnames(e)[1:3] <-c("gene","geneFC","distance")
+colnames(ee)[1:3] <-c("gene","geneFC","distance")
+colnames(eee)[1:3] <-c("gene","geneFC","distance")
+colnames(f)[1:3] <-c("gene","geneFC","distance")
+colnames(ff)[1:3] <-c("gene","geneFC","distance")
+colnames(fff)[1:3] <-c("gene","geneFC","distance")
+
+
+geneFC_DMR_DAR_DMAR<-rbind(a,b,c,d,e,f,aa,bb,cc,dd,ee,ff,aaa,bbb,ccc,ddd,eee,fff)
+geneFC_DMR_DAR_DMAR$type <- factor(geneFC_DMR_DAR_DMAR$type, levels = c("hyperDMR","hypoDMR","closingDAR","openingDAR","closingDMAR","openingDMAR"))
+
+
+pppp<-ggplot(geneFC_DMR_DAR_DMAR[geneFC_DMR_DAR_DMAR$distance < 25000,], aes(x=type, y= -geneFC)) +
+  geom_boxplot(aes(fill=type),position = position_dodge(0.9),outlier.shape=NA, outlier.size=NA)+ggtitle("Closest DEGs FC (within 25kb)")+ 
+  theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 14), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
+  labs(x = "Sample", y = "gene log2(FC)")+scale_fill_manual(values = mypalette[c(1:4,9,10)])+scale_color_manual(values=mypalette[c(1:4,9,10)])+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())  + theme(panel.background = element_rect(fill = 'white',colour = 'black'))
+pppp+facet_grid(.~comp)+geom_hline(yintercept=0,linetype="dashed",color="red")
+
+
+
+ppppp<-ggplot(geneFC_DMR_DAR_DMAR[geneFC_DMR_DAR_DMAR$distance < 50000,], aes(x=type, y=-geneFC)) + #USE THIS FOR PAPER
+  geom_boxplot(aes(fill=type),position = position_dodge(0.9),outlier.shape=NA, outlier.size=NA)+ggtitle("Closest DEGs FC (within 50kb)")+ 
+  theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 14), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
+  labs(x = "Sample", y = "gene log2(FC)")+scale_fill_manual(values = mypalette[c(1:4,9,10)])+scale_color_manual(values=mypalette[c(1:4,9,10)])+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())  + theme(panel.background = element_rect(fill = 'white',colour = 'black'))
+ppppp+facet_grid(.~comp)+geom_hline(yintercept=0,linetype="dashed",color="red")
+
+##plot solo DMR vs soloDAR vs DMAR ##
+hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp.SOLO <-hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp[!(hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$chrompos %in% openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$chrompos),]
+hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp.SOLO <-hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp #no closingDMAR_s15vs24
+hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp.SOLO <-hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp[!(hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$chrompos %in% openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$chrompos),]
+hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp.SOLO <-hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp[!(hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$chrompos %in% closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$chrompos),]
+hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp.SOLO <-hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp[!(hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$chrompos %in% openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$chrompos),]
+hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp.SOLO <-hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp[!(hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$chrompos %in% closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$chrompos),]
+
+openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp.SOLO <-openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp[!(openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$chrompos %in% openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$chrompos),]
+closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp.SOLO <-closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp#no closingDMAR_s15vs24
+openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp.SOLO <-openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp[!(openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$chrompos %in% openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$chrompos),]
+closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp.SOLO <-closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp[!(closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$chrompos %in% closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$chrompos),]
+openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp.SOLO <-openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp[!(openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$chrompos %in% openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$chrompos),]
+closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp.SOLO <-closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp[!(closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$chrompos %in% closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$chrompos),]
+
+a1 <- data.frame(hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp.SOLO$gene,hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp.SOLO$s15v24hpf_log2_change,hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp.SOLO$distance)
+a1$type <- "hypoDMR"
+a1$comp <- "s15v24"
+b1 <- data.frame(hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp.SOLO$gene,hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp.SOLO$s15v24hpf_log2_change,hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp.SOLO$distance)
+b1$type <- "hyperDMR"
+b1$comp <- "s15v24"
+c1<- data.frame(hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp.SOLO$gene,hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp.SOLO$s24vMel_log2_change ,hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp.SOLO$distance)
+c1$type <- "hypoDMR"
+c1$comp <- "s24vMel"
+d1<- data.frame(hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp.SOLO$gene,hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp.SOLO$s24vMel_log2_change,hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp.SOLO$distance)
+d1$type <- "hyperDMR"
+d1$comp <- "s24vMel"
+e1<- data.frame(hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp.SOLO$gene,hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp.SOLO$s24vIri_log2_change,hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp.SOLO$distance)
+e1$type <- "hypoDMR"
+e1$comp <- "s24vIri"
+f1<- data.frame(hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp.SOLO$gene,hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp.SOLO$s24vIri_log2_change,hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp.SOLO$distance)
+f1$type <- "hyperDMR"
+f1$comp <- "s24vIri"
+
+aa1 <- data.frame(openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp.SOLO$gene,openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp.SOLO$s15v24hpf_log2_change,openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp.SOLO$distance)
+aa1$type <- "openingDAR"
+aa1$comp <- "s15v24"
+bb1 <- data.frame(closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp.SOLO$gene,closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp.SOLO$s15v24hpf_log2_change,closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp.SOLO$distance)
+bb1$type <- "closingDAR"
+bb1$comp <- "s15v24"
+cc1<- data.frame(openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp.SOLO$gene,openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp.SOLO$s24vMel_log2_change ,openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp.SOLO$distance)
+cc1$type <- "openingDAR"
+cc1$comp <- "s24vMel"
+dd1<- data.frame(closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp.SOLO$gene,closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp.SOLO$s24vMel_log2_change ,closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp.SOLO$distance)
+dd1$type <- "closingDAR"
+dd1$comp <- "s24vMel"
+ee1<- data.frame(openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp.SOLO$gene,openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp.SOLO$s24vIri_log2_change,openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp.SOLO$distance)
+ee1$type <- "openingDAR"
+ee1$comp <- "s24vIri"
+ff1<- data.frame(closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp.SOLO$gene,closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp.SOLO$s24vIri_log2_change,closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp.SOLO$distance)
+ff1$type <- "closingDAR"
+ff1$comp <- "s24vIri"
+
+aaa <- data.frame(openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$gene,openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$s15v24hpf_log2_change,openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$distance)
+aaa$type <- "openingDMAR"
+aaa$comp <- "s15v24"
+bbb <- data.frame("0",0,0)
+bbb$type <- "closingDMAR"
+bbb$comp <- "s15v24"
+ccc<- data.frame(openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$gene,openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$s24vMel_log2_change ,openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$distance)
+ccc$type <- "openingDMAR"
+ccc$comp <- "s24vMel"
+ddd<- data.frame(closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$gene,closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$s24vMel_log2_change ,closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$distance)
+ddd$type <- "closingDMAR"
+ddd$comp <- "s24vMel"
+eee<- data.frame(openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$gene, openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$s24vIri_log2_change,openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$distance)
+eee$type <- "openingDMAR"
+eee$comp <- "s24vIri"
+fff<- data.frame(closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$gene,closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$s24vIri_log2_change,closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$distance)
+fff$type <- "closingDMAR"
+fff$comp <- "s24vIri"
+
+colnames(a1)[1:3] <-c("gene","geneFC","distance")
+colnames(aa1)[1:3] <-c("gene","geneFC","distance")
+colnames(aaa)[1:3] <-c("gene","geneFC","distance")
+colnames(b1)[1:3] <-c("gene","geneFC","distance")
+colnames(bb1)[1:3] <-c("gene","geneFC","distance")
+colnames(bbb)[1:3] <-c("gene","geneFC","distance")
+colnames(c1)[1:3] <-c("gene","geneFC","distance")
+colnames(cc1)[1:3] <-c("gene","geneFC","distance")
+colnames(ccc)[1:3] <-c("gene","geneFC","distance")
+colnames(d1)[1:3] <-c("gene","geneFC","distance")
+colnames(dd1)[1:3] <-c("gene","geneFC","distance")
+colnames(ddd)[1:3] <-c("gene","geneFC","distance")
+colnames(e1)[1:3] <-c("gene","geneFC","distance")
+colnames(ee1)[1:3] <-c("gene","geneFC","distance")
+colnames(eee)[1:3] <-c("gene","geneFC","distance")
+colnames(f1)[1:3] <-c("gene","geneFC","distance")
+colnames(ff1)[1:3] <-c("gene","geneFC","distance")
+colnames(fff)[1:3] <-c("gene","geneFC","distance")
+
+
+geneFC_DMR_DAR_DMAR2<-rbind(a1,b1,c1,d1,e1,f1,aa1,bb1,cc1,dd1,ee1,ff1,aaa,bbb,ccc,ddd,eee,fff)
+geneFC_DMR_DAR_DMAR2$type <- factor(geneFC_DMR_DAR_DMAR2$type, levels = c("hyperDMR","hypoDMR","closingDAR","openingDAR","closingDMAR","openingDMAR"))
+
+
+pppp<-ggplot(geneFC_DMR_DAR_DMAR2[geneFC_DMR_DAR_DMAR2$distance < 25000,], aes(x=type, y= -geneFC)) +
+  geom_boxplot(aes(fill=type),position = position_dodge(0.9),outlier.shape=NA, outlier.size=NA)+ggtitle("Closest DEGs FC (within 25kb)")+ 
+  theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 14), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
+  labs(x = "Sample", y = "gene log2(FC)")+scale_fill_manual(values = mypalette[c(1:4,9,10)])+scale_color_manual(values=mypalette[c(1:4,9,10)])+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())  + theme(panel.background = element_rect(fill = 'white',colour = 'black'))
+pppp+facet_grid(.~comp)+geom_hline(yintercept=0,linetype="dashed",color="red")
+
+
+ppppp<-ggplot(geneFC_DMR_DAR_DMAR2[geneFC_DMR_DAR_DMAR2$distance < 50000,], aes(x=type, y=-geneFC)) +
+  geom_boxplot(aes(fill=type),position = position_dodge(0.9),outlier.shape=NA, outlier.size=NA)+ggtitle("Closest DEGs FC (within 50kb)")+ 
+  theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 14), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
+  labs(x = "Sample", y = "gene log2(FC)")+scale_fill_manual(values = mypalette[c(1:4,9,10)])+scale_color_manual(values=mypalette[c(1:4,9,10)])+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())  + theme(panel.background = element_rect(fill = 'white',colour = 'black'))
+ppppp+facet_grid(.~comp)+geom_hline(yintercept=0,linetype="dashed",color="red")
+
+##### pigment specific #########
+hypoDMR_s24vsMel_specific <- DMAR[DMAR$DMRs24vMel >0 & DMAR$DMRs24vIri <=0,]
+hyperDMR_s24vsMel_specific <- DMAR[DMAR$DMRs24vMel <0 & DMAR$DMRs24vIri >=0,]
+hypoDMR_s24vsIri_specific <- DMAR[DMAR$DMRs24vIri >0 & DMAR$DMRs24vMel <=0,]
+hyperDMR_s24vsIri_specific <- DMAR[DMAR$DMRs24vIri <0 & DMAR$DMRs24vMel >=0,]
+
+
+openingDAR_s24vsMel_specific <- DMAR[DMAR$DARs24vMel >0 & DMAR$DARs24vIri <=0,]
+closingDAR_s24vsMel_specific <- DMAR[DMAR$DARs24vMel <0 & DMAR$DARs24vIri >=0,]
+openingDAR_s24vsIri_specific <- DMAR[DMAR$DARs24vIri >0 & DMAR$DARs24vMel <=0,]
+closingDAR_s24vsIri_specific <- DMAR[DMAR$DARs24vIri <0 & DMAR$DARs24vMel >=0,]
+
+
+openingDMAR_s24vsMel_specific <- openingDMAR_s24vsMel[!(openingDMAR_s24vsMel$chrompos %in% openingDMAR_s24vsIri$chrompos),]# hypo opening
+closingDMAR_s24vsMel_specific <- closingDMAR_s24vsMel[!(closingDMAR_s24vsMel$chrompos %in% closingDMAR_s24vsIri$chrompos),]# hypo closing
+openingDMAR_s24vsIri_specific <- openingDMAR_s24vsIri[!(openingDMAR_s24vsIri$chrompos %in% openingDMAR_s24vsMel$chrompos),]# hypo opening
+closingDMAR_s24vsIri_specific <- closingDMAR_s24vsIri[!(closingDMAR_s24vsIri$chrompos %in% closingDMAR_s24vsMel$chrompos),]# hypo closing
+
+
+write.table(hypoDMR_s24vsMel_specific,"hypoDMR_s24vsMel_specific.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(hyperDMR_s24vsMel_specific,"hyperDMR_s24vsMel_specific.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(hypoDMR_s24vsIri_specific,"hypoDMR_s24vsIri_specific.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(hyperDMR_s24vsIri_specific,"hyperDMR_s24vsIri_specific.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+
+
+write.table(openingDAR_s24vsMel_specific,"openingDAR_s24vsMel_specific.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(closingDAR_s24vsMel_specific,"closingDAR_s24vsMel_specific.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(openingDAR_s24vsIri_specific,"openingDAR_s24vsIri_specific.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(closingDAR_s24vsIri_specific,"closingDAR_s24vsIri_specific.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+
+write.table(openingDMAR_s24vsMel_specific,"openingDMAR_s24vsMel_specific.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(closingDMAR_s24vsMel_specific,"closingDMAR_s24vsMel_specific.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(openingDMAR_s24vsIri_specific,"openingDMAR_s24vsIri_specific.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(closingDMAR_s24vsIri_specific,"closingDMAR_s24vsIri_specific.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+
+
+bedtools closest -d -a hypoDMR_s24vsMel_specific.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed > hypoDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.sorted.bed
+bedtools closest -d -a hyperDMR_s24vsMel_specific.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed >hyperDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.sorted.bed
+bedtools closest -d -a hypoDMR_s24vsIri_specific.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed > hypoDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.sorted.bed
+bedtools closest -d -a hyperDMR_s24vsIri_specific.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed >hyperDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.sorted.bed
+
+
+bedtools closest -d -a openingDAR_s24vsMel_specific.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed > openingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.sorted.bed
+bedtools closest -d -a closingDAR_s24vsMel_specific.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed >closingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.sorted.bed
+bedtools closest -d -a openingDAR_s24vsIri_specific.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed > openingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.sorted.bed
+bedtools closest -d -a closingDAR_s24vsIri_specific.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed >closingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.sorted.bed
+
+bedtools closest -d -a openingDMAR_s24vsMel_specific.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed > openingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.sorted.bed
+bedtools closest -d -a closingDMAR_s24vsMel_specific.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed >closingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.sorted.bed
+bedtools closest -d -a openingDMAR_s24vsIri_specific.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed > openingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.sorted.bed
+bedtools closest -d -a closingDMAR_s24vsIri_specific.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed >closingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.sorted.bed
+
+hypoDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel <- read.table("hypoDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+hyperDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel <- read.table("hyperDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+hypoDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri <- read.table("hypoDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+hyperDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri <- read.table("hyperDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+
+
+openingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel <- read.table("openingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+closingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel <- read.table("closingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+openingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri <- read.table("openingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+closingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri <- read.table("closingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+
+openingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel <- read.table("openingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+closingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel <- read.table("closingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+openingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri <- read.table("openingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+closingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri <- read.table("closingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+
+
+colnames(hypoDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+hypoDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp <- merge(hypoDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel,DEG_TPM,by = "gene")
+colnames(hyperDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+hyperDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp <- merge(hyperDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel,DEG_TPM,by = "gene")
+colnames(hypoDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+hypoDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp <- merge(hypoDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri,DEG_TPM,by = "gene")
+colnames(hyperDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+hyperDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp <- merge(hyperDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri,DEG_TPM,by = "gene")
+colnames(openingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+openingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp <- merge(openingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel,DEG_TPM,by = "gene")
+colnames(closingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+closingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp <- merge(closingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel,DEG_TPM,by = "gene")
+colnames(openingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+openingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp <- merge(openingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri,DEG_TPM,by = "gene")
+colnames(closingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+closingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp <- merge(closingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri,DEG_TPM,by = "gene")
+colnames(openingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+openingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp <- merge(openingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel,DEG_TPM,by = "gene")
+colnames(closingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+closingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp <- merge(closingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel,DEG_TPM,by = "gene")
+colnames(openingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+openingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp <- merge(openingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri,DEG_TPM,by = "gene")
+colnames(closingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+closingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp <- merge(closingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri,DEG_TPM,by = "gene")
+
+
+hypoDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp.SOLO <-hypoDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp[!(hypoDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel$chrompos %in% openingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$chrompos),]
+hyperDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp.SOLO <-hyperDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp[!(hyperDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel$chrompos %in% closingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$chrompos),]
+hypoDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp.SOLO <-hypoDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp[!(hypoDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri$chrompos %in% openingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$chrompos),]
+hyperDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp.SOLO <-hyperDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp[!(hyperDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri$chrompos %in% closingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$chrompos),]
+openingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp.SOLO <-openingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp[!(openingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel$chrompos %in% openingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$chrompos),]
+closingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp.SOLO <-closingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp[!(closingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel$chrompos %in% closingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$chrompos),]
+openingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp.SOLO <-openingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp[!(openingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri$chrompos %in% openingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$chrompos),]
+closingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp.SOLO <-closingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp[!(closingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri$chrompos %in% closingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$chrompos),]
+
+
+a5 <- data.frame(hypoDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$gene,hypoDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$s24vMel_log2_change,hypoDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$distance)
+a5$type <- "hypoDMRspecific"
+a5$comp <- "s24vMel"
+b5 <- data.frame(hyperDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$gene,hyperDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$s24vMel_log2_change,hyperDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$distance)
+b5$type <- "hyperDMRspecific"
+b5$comp <- "s24vMel"
+c5 <- data.frame(hypoDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$gene,hypoDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$s24vIri_log2_change,hypoDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$distance)
+c5$type <- "hypoDMRspecific"
+c5$comp <- "s24vIri"
+d5 <- data.frame(hyperDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$gene,hyperDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$s24vIri_log2_change,hyperDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$distance)
+d5$type <- "hyperDMRspecific"
+d5$comp <- "s24vIri"
+a3 <- data.frame(openingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$gene,openingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$s24vMel_log2_change,openingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$distance)
+a3$type <- "openingDARspecific"
+a3$comp <- "s24vMel"
+b3 <- data.frame(closingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$gene,closingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$s24vMel_log2_change,closingDAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$distance)
+b3$type <- "closingDARspecific"
+b3$comp <- "s24vMel"
+c3 <- data.frame(openingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$gene,openingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$s24vIri_log2_change,openingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$distance)
+c3$type <- "openingDARspecific"
+c3$comp <- "s24vIri"
+d3 <- data.frame(closingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$gene,closingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$s24vIri_log2_change,closingDAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$distance)
+d3$type <- "closingDARspecific"
+d3$comp <- "s24vIri"
+a4 <- data.frame(openingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$gene,openingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$s24vMel_log2_change,openingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$distance)
+a4$type <- "openingDMARspecific"
+a4$comp <- "s24vMel"
+b4 <- data.frame(closingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$gene,closingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$s24vMel_log2_change,closingDMAR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.GeneExp$distance)
+b4$type <- "closingDMARspecific"
+b4$comp <- "s24vMel"
+c4 <- data.frame(openingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$gene,openingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$s24vIri_log2_change,openingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$distance)
+c4$type <- "openingDMARspecific"
+c4$comp <- "s24vIri"
+d4 <- data.frame(closingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$gene,closingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$s24vIri_log2_change,closingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.GeneExp$distance)
+d4$type <- "closingDMARspecific"
+d4$comp <- "s24vIri"
+
+
+
+colnames(a3)[1:3] <-c("gene","geneFC","distance")
+colnames(a4)[1:3] <-c("gene","geneFC","distance")
+colnames(b3)[1:3] <-c("gene","geneFC","distance")
+colnames(b4)[1:3] <-c("gene","geneFC","distance")
+colnames(c3)[1:3] <-c("gene","geneFC","distance")
+colnames(c4)[1:3] <-c("gene","geneFC","distance")
+colnames(d3)[1:3] <-c("gene","geneFC","distance")
+colnames(d4)[1:3] <-c("gene","geneFC","distance")
+colnames(a5)[1:3] <-c("gene","geneFC","distance")
+colnames(b5)[1:3] <-c("gene","geneFC","distance")
+colnames(c5)[1:3] <-c("gene","geneFC","distance")
+colnames(d5)[1:3] <-c("gene","geneFC","distance")
+
+
+geneFC_DMR_DAR_DMAR3<-rbind(geneFC_DMR_DAR_DMAR,a3,b3,c3,d3,a4,b4,c4,d4,a5,b5,c5,d5)
+geneFC_DMR_DAR_DMAR3$type <- factor(geneFC_DMR_DAR_DMAR3$type, levels = c("hypoDMR","hyperDMR","closingDAR","openingDAR","closingDMAR","openingDMAR","hypoDMRspecific","hyperDMRspecific","closingDARspecific","openingDARspecific","closingDMARspecific","openingDMARspecific"))
+
+
+pppp<-ggplot(geneFC_DMR_DAR_DMAR3[geneFC_DMR_DAR_DMAR3$distance < 25000,], aes(x=type, y= -geneFC)) +
+  geom_boxplot(aes(fill=type),position = position_dodge(0.9),outlier.shape=NA, outlier.size=NA)+ggtitle("Closest DEGs FC (within 25kb)")+ 
+  theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 14), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
+  labs(x = "Sample", y = "gene log2(FC)")+scale_fill_manual(values = mypalette[c(1,2,3,4,9,10,1,2,3,4,9,10)])+scale_color_manual(values=mypalette[c(1,2,3,4,9,10,1,2,3,4,9,10)])+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())  + theme(panel.background = element_rect(fill = 'white',colour = 'black'))
+pppp+facet_grid(.~comp)+geom_hline(yintercept=0,linetype="dashed",color="red")
+
+
+ppppp<-ggplot(geneFC_DMR_DAR_DMAR3[geneFC_DMR_DAR_DMAR3$distance < 50000,], aes(x=type, y=-geneFC)) +
+  geom_boxplot(aes(fill=type),position = position_dodge(0.9),outlier.shape=NA, outlier.size=NA)+ggtitle("Closest DEGs FC (within 50kb)")+ 
+  theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 14), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
+  labs(x = "Sample", y = "gene log2(FC)")+scale_fill_manual(values = mypalette[c(1,2,3,4,9,10,1,2,3,4,9,10)])+scale_color_manual(values=mypalette[c(1,2,3,4,9,10,1,2,3,4,9,10)])+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())  + theme(panel.background = element_rect(fill = 'white',colour = 'black'))
+ppppp+facet_grid(.~comp)+geom_hline(yintercept=0,linetype="dashed",color="red")
+
+
+
+
+### Generate bar plots representing frequency and distribution of iridophore-associated DM/ARs with a particular TF motif ####
+# ALX1_ALX3_ALX4_GBX2_TFEC_SOX10_MOTIF_occurrence_in_Iri_DMR_DAR_DMAR.pdf
+data <- read.table("MOTIF_occurrence_in_24vsIri_DMAR_table.txt", sep = "\t", header = T, stringsAsFactors=F)
+data<-as.data.frame(data)
+
+data$MOTIF<-as.factor(data$MOTIF)
+data$MOTIF <- factor(data$MOTIF, levels = c("ALX1","ALX3","ALX4","GBX2","TFEC","SOX10"))
+
+data$DMAR_type <- factor(data$DMAR_type, levels = c("solo_closeDAR","solo_openDAR","solo_hyperDMR","solo_hypoDMR","hypo_closing_DMAR","hypo_opening_DMAR"))
+
+
+mypalette <- brewer.pal(n = 12, name = "Paired")
+#mypalette <-c("#740001","#ae0001","#e35d6a","#ffdfba","#ffffba","#baffc9","#bae1ff","#428bca","#d896ff")
+p1 <- ggplot(data, aes(x=MOTIF, y=DMAR_wMOTIF,fill=DMAR_type,label = DMAR_wMOTIF)) +
+  geom_bar(position="stack",stat="identity",colour = "black")+
+  ggtitle("Motifs occurrence")+theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 16), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
+  labs(x = "Motif", y = "# of DM/ARs with motif")+scale_fill_manual(values = mypalette[c(1,2,3,4,9,10)])+scale_color_manual(values=mypalette[c(1,2,3,4,7,8)])+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))+ 
+  theme(legend.title=element_text(size=16,face = "bold"),legend.text=element_text(size=12,face = "bold"))+geom_text(size = 3, fontface = "bold",position = position_stack(vjust = 0.5))+coord_flip()
+p1
+
+p2<- ggplot(data, aes(x=MOTIF, y=MOTIF_pct, label=MOTIF_pct, fill=DMAR_type)) +
+  geom_bar(position="stack",stat="identity",colour = "black")+
+  ggtitle("Motifs occurrence")+theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 16), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
+  labs(x = "Motif", y = "pct")+scale_fill_manual(values = mypalette[c(1,2,3,4,9,10)])+scale_color_manual(values=mypalette[c(1,2,3,4,7,8)])+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))+ 
+  theme(legend.title=element_text(size=16,face = "bold"),legend.text=element_text(size=12,face = "bold"))+geom_text(size = 3, fontface = "bold",position = position_stack(vjust = 0.5))+coord_flip()
+p2
+
+pdf("ALX1_ALX3_ALX4_GBX2_TFEC_SOX10_MOTIF_occurrence_in_Iri_DMR_DAR_DMAR.pdf", width = 10, height = 8)
+grid.draw(rbind(ggplotGrob(p1), ggplotGrob(p2), size = "last"))
+dev.off()
+
+# DMR_DAR_DMAR_occurence.pdf
+data <- read.table("total_DMAR_distribution.txt", sep = "\t", header = T, stringsAsFactors=F)
+data<-as.data.frame(data)
+
+data$DMAR_type <- factor(data$DMAR_type, levels = c("solo_closeDAR","solo_openDAR","solo_hyperDMR","solo_hypoDMR","hypo_closing_DMAR","hypo_opening_DMAR"))
+data$DMAR <-"DMAR"
+p3 <- ggplot(data, aes(x=DMAR, y=DMAR_number, fill=DMAR_type,label=DMAR_number)) +
+  geom_bar(position="stack",stat="identity",colour = "black")+
+  ggtitle("DM/AR number")+theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 16), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
+  labs(y = "pct")+scale_fill_manual(values = mypalette[c(1,2,3,4,9,10)])+scale_color_manual(values=mypalette[c(1,2,3,4,7,8)])+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))+ 
+  theme(legend.title=element_text(size=16,face = "bold"),legend.text=element_text(size=12,face = "bold"))+geom_text(size = 3, fontface = "bold",position = position_stack(vjust = 0.5))+coord_flip()
+p4 <- ggplot(data, aes(x=DMAR, y=pct, fill=DMAR_type,label=pct)) +
+  geom_bar(position="stack",stat="identity",colour = "black")+
+  ggtitle("DM/AR number")+theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 16), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
+  labs( y = "pct")+scale_fill_manual(values = mypalette[c(1,2,3,4,9,10)])+scale_color_manual(values=mypalette[c(1,2,3,4,7,8)])+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))+ 
+  theme(legend.title=element_text(size=16,face = "bold"),legend.text=element_text(size=12,face = "bold"))+geom_text(size = 3, fontface = "bold",position = position_stack(vjust = 0.5))+coord_flip()
+
+pdf("DMR_DAR_DMAR_occurence.pdf", width = 12, height = 4)
+grid.draw(rbind(ggplotGrob(p3), ggplotGrob(p4), size = "last"))
+dev.off()
 
