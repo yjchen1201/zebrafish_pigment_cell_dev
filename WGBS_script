@@ -1,15 +1,20 @@
-#Tool version record
-##Program: samtools (Tools for alignments in the SAM format)
-##Version: 1.3.1 (using htslib 1.3.1)
-##version 0.7.0 Bismark
-##java -jar $PICARD MarkDuplicates --version     2.8.1-SNAPSHOT
-##versionSTAR             020201
-##versionGenome           020101 020200
-##Running StringTie 1.3.3. 
-##macs2 2.1.1.20160309
-##Program: bwa (alignment via Burrows-Wheeler transformation) Version: 0.7.15-r1140
+#cutadapt v1.10: Used to trim adapter reads 
+#samtools version 1.3.1: Used to sort and downsample bam files for downstream processing
+#bismark v0.16.1: Used to align WGBS reads to the genome and call CpG methylation
+#bwa v0.7.15: bwa-mem used to align ATAC-seq reads to the genome
+#macs2 v2.1.1: Used to call peaks for ATAC-seq
+#STAR v2.5.1b: Used to align RNA-sequencing data
+#stringtie v1.3.3: Used to annotate aligned reads and quantify transcripts. 
+#picard v2.8.1: Used to mark and remove duplicate reads
+#bedtools v2.27.1: closest, intersect, shuffle command used as specified in manuscript 
+#meme v5.0.3: Used AME command to find motif enrichment and FIMO command to scan for motif presence 
+#R v3.3.0: Used to analyze sequencing library results
+#DSS v2.14.0 :Used to call differentially methylated regions
+#DESeq2 v1.12.4: Used to call differentially expressed genes
+#DiffBind v 2.2.12: Used to call differentially accessible regions/peaks
+#Metascape v3.0: Used for GO enrichment analysis
 
- ##################################### WGBS ANALYSIS (ENDED UP USING d30)#########################################
+ ##################################### WGBS ANALYSIS (Use d30)#########################################
 ## Example of BS-seq pipeline#
 
 # Adapter trimming
@@ -36,6 +41,9 @@ bismark_methylation_extractor -p --no_overlap --comprehensive --gzip --no_header
 ##Bismark ON LAMBDA###
 bismark --quiet <path to lambda genome> -1 "SAMPLE_R1.fastq.gz" -2 "SAMPLE_R2.fastq.gz"
 
+
+###convert bismark coverage output into DSS input file format
+python3 convert_DSS.py Merged_ALLRUNS_Iri_Rep1_trimmed_bismark_resorted.rmdup.bismark.cov
 
 ###################################################### {R analysis} ######################################################
 ##QC individual WGBS Replicates##
