@@ -1,3 +1,18 @@
+#cutadapt v1.10: Used to trim adapter reads 
+#samtools version 1.3.1: Used to sort and downsample bam files for downstream processing
+#bismark v0.16.1: Used to align WGBS reads to the genome and call CpG methylation
+#bwa v0.7.15: bwa-mem used to align ATAC-seq reads to the genome
+#macs2 v2.1.1: Used to call peaks for ATAC-seq
+#STAR v2.5.1b: Used to align RNA-sequencing data
+#stringtie v1.3.3: Used to annotate aligned reads and quantify transcripts. 
+#picard v2.8.1: Used to mark and remove duplicate reads
+#bedtools v2.27.1: closest, intersect, shuffle command used as specified in manuscript 
+#meme v5.0.3: Used AME command to find motif enrichment and FIMO command to scan for motif presence 
+#R v3.3.0: Used to analyze sequencing library results
+#DSS v2.14.0 :Used to call differentially methylated regions
+#DESeq2 v1.12.4: Used to call differentially expressed genes
+#DiffBind v 2.2.12: Used to call differentially accessible regions/peaks
+#Metascape v3.0: Used for GO enrichment analysis
 #######################################   RNA-seq ANALYSIS  ############################################
 ## Example ##
 
@@ -25,45 +40,26 @@ library(ggplot2)
 library(RColorBrewer)
 mypalette <- brewer.pal(12,"Paired")
 
-genelist <- read.table("<path to RNA folder>/stringtie/Combined_gene_list_RefSeq.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
+genelist <- read.table("<path to RNA folder>/stringtie/Combined_gene_list_RefSeq.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
 
-s15_R1 <- read.table("<path to RNA folder>/stringtie/RNA_15somiteNCC_Rep1.gene.abundance.filteredNM.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
-s15_R2 <- read.table("<path to RNA folder>/stringtie/RNA_15somiteNCC_Rep2.gene.abundance.filteredNM.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
-s24_R1 <- read.table("<path to RNA folder>/stringtie/RNA_24hpfNCC_Rep1.gene.abundance.filteredNM.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
-s24_R2 <- read.table("<path to RNA folder>/stringtie/RNA_24hpfNCC_Rep2.gene.abundance.filteredNM.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
-Mel_R1 <- read.table("<path to RNA folder>/stringtie/RNA_Mel_Rep1.gene.abundance.filteredNM.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
-Mel_R2 <- read.table("<path to RNA folder>/stringtie/RNA_Mel_Rep2.gene.abundance.filteredNM.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
-Iri_R1 <- read.table("<path to RNA folder>/stringtie/RNA_Iri_Rep1.gene.abundance.filteredNM.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
-Iri_R2 <- read.table("<path to RNA folder>/stringtie/RNA_Iri_Rep2.gene.abundance.filteredNM.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
+s15_R1 <- read.table("<path to RNA folder>/stringtie/RNA_15somiteNCC_Rep1.gene.abundance.filteredNM.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
+s15_R2 <- read.table("<path to RNA folder>/stringtie/RNA_15somiteNCC_Rep2.gene.abundance.filteredNM.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
+s24_R1 <- read.table("<path to RNA folder>/stringtie/RNA_24hpfNCC_Rep1.gene.abundance.filteredNM.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
+s24_R2 <- read.table("<path to RNA folder>/stringtie/RNA_24hpfNCC_Rep2.gene.abundance.filteredNM.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
+Mel_R1 <- read.table("<path to RNA folder>/stringtie/RNA_Mel_Rep1.gene.abundance.filteredNM.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
+Mel_R2 <- read.table("<path to RNA folder>/stringtie/RNA_Mel_Rep2.gene.abundance.filteredNM.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
+Iri_R1 <- read.table("<path to RNA folder>/stringtie/RNA_Iri_Rep1.gene.abundance.filteredNM.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
+Iri_R2 <- read.table("<path to RNA folder>/stringtie/RNA_Iri_Rep2.gene.abundance.filteredNM.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
 
-#TPM PCA plot
-exp3<-Reduce(function(x, y) merge(x, y,by = "V1"), list(genelist,s15_R1[,c(1,8)],s15_R2[,c(1,8)], s24_R1[,c(1,8)],s24_R2[,c(1,8)],Mel_R1[,c(1,8)],Mel_R2[,c(1,8)], Iri_R1[,c(1,8)],Iri_R2[,c(1,8)]))
-colnames(exp3) <- c("gene","s15_Rep1","s15_Rep2","s24_Rep1","s24_Rep2","Mel_Rep1","Mel_Rep2","Iri_Rep1","Iri_Rep2")
-exp3 <- exp3[!duplicated(exp3$gene),]
 
-#PCA plot
-m.pca <-prcomp(exp3[,2:9])
-summary(m.pca)
+geneTPM<-Reduce(function(x, y) merge(x, y,by = "V1",all.x = T), list(s15_R1[,c(1,9)],s15_R2[,c(1,9)], s24_R1[,c(1,9)],s24_R2[,c(1,9)],Mel_R1[,c(1,9)],Mel_R2[,c(1,9)], Iri_R1[,c(1,9)],Iri_R2[,c(1,9)]))
+colnames(geneTPM) <- c("gene","s15_Rep1","s15_Rep2","s24_Rep1","s24_Rep2","Mel_Rep1","Mel_Rep2","Iri_Rep1","Iri_Rep2")
+geneTPM <- geneTPM[!duplicated(geneTPM$gene),]
+geneTPM$s15 <- (geneTPM$s15_Rep1+geneTPM$s15_Rep2)/2
+geneTPM$s24 <- (geneTPM$s24_Rep1+geneTPM$s24_Rep2)/2
+geneTPM$Mel <- (geneTPM$Mel_Rep1+geneTPM$Mel_Rep2)/2
+geneTPM$Iri <- (geneTPM$Iri_Rep1+geneTPM$Iri_Rep2)/2
 
-#Importance of components:
-#                            PC1      PC2       PC3       PC4      PC5      PC6      PC7      PC8
-#Standard deviation     516.9397 216.3619 146.03632 114.86378 53.31807 45.20201 41.44593 23.99747
-#Proportion of Variance   0.7512   0.1316   0.05995   0.03709  0.00799  0.00574  0.00483  0.00162
-#Cumulative Proportion    0.7512   0.8828   0.94273   0.97982  0.98781  0.99355  0.99838  1.00000
-
-loadings <- data.frame(m.pca$rotation, .names = row.names(m.pca$rotation))
-a<-ggplot(loadings, aes(x = PC1, y = PC2))+geom_text(data=loadings, 
-             mapping=aes(x = PC1, y = PC2, label = .names, colour = .names), fontface = "bold", size = 6) +
-    labs(x = "PC1 (Variance = 75.1%)", y = "PC2 (Variance = 13.2%)")+ggtitle("RNAseq PCA plot: PC1 vs PC2")+theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 16), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
-      scale_fill_manual(values = mypalette)+scale_color_manual(values=mypalette)+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))+ theme(legend.position="none")
-b<-ggplot(loadings, aes(x = PC1, y = PC3))+geom_text(data=loadings, 
-              mapping=aes(x = PC1, y = PC3, label = .names, colour = .names), fontface = "bold", size = 6) +
-    labs(x = "PC1 (Variance = 75.1%)", y = "PC3 (Variance = 6.0%)")+ggtitle("RNAseq PCA plot: PC1 vs PC3")+theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 16), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
-      scale_fill_manual(values = mypalette)+scale_color_manual(values=mypalette)+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))+ theme(legend.position="none")
-c<-ggplot(loadings, aes(x = PC2, y = PC3))+geom_text(data=loadings, 
-              mapping=aes(x = PC2, y = PC3, label = .names, colour = .names), fontface = "bold", size = 6) +
-    labs(x = "PC2 (Variance = 13.2%)", y = "PC3 (Variance = 6.0%)")+ggtitle("RNAseq PCA plot: PC2 vs PC3")+theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 16), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
-      scale_fill_manual(values = mypalette)+scale_color_manual(values=mypalette)+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))+ theme(legend.position="none")
 
 
 
@@ -220,14 +216,14 @@ write.table(DEG2,"DEGs_combined_samples_p0.01_wTFinfo.txt",col.names = T, row.na
 
 #### Identify DEGs for each cell type
 DEG2 <- read.table("DEGs_combined_samples_p0.01_wTFinfo.txt",header = T, ,quote = "", sep = "\t",stringsAsFactors = F)
-DEG2<-merge(DEG2,geneFPKM,by = "gene", all.x =T)##ALL GENES
-DEG2<-DEG2[DEG2$s15 > 5 | DEG2$s24 > 5 |DEG2$Mel > 5 |DEG2$Iri > 5,] #filter genes with at least 5 rpkm
+DEG2<-merge(DEG2,geneTPM,by = "gene", all.x =T)##ALL GENES
+DEG2<-DEG2[DEG2$s15 > 5 | DEG2$s24 > 5 |DEG2$Mel > 5 |DEG2$Iri > 5,]
 
 str(DEG2[DEG2$s15v24hpf_log2_change >0,])
 
 # get cell type-specific up(on) down(off) regulated DEGs
-Mel_specific_DEG_on <- DEG2[DEG2$s24vMel_log2_change <0 & DEG2$s24vIri_log2_change >=0 & DEG2$MelvIri_log2_change >0,] #270
-Mel_specific_DEG_off <- DEG2[DEG2$s24vMel_log2_change >0 & DEG2$s24vIri_log2_change <=0 & DEG2$MelvIri_log2_change <0,] #92
+Mel_specific_DEG_on <- DEG2[DEG2$s24vMel_log2_change <0 & DEG2$s24vIri_log2_change >=0 & DEG2$MelvIri_log2_change >0,] 
+Mel_specific_DEG_off <- DEG2[DEG2$s24vMel_log2_change >0 & DEG2$s24vIri_log2_change <=0 & DEG2$MelvIri_log2_change <0,]
 Iri_specific_DEG_on <- DEG2[DEG2$s24vMel_log2_change >=0 & DEG2$s24vIri_log2_change <0 & DEG2$MelvIri_log2_change <0,] #351
 Iri_specific_DEG_off <- DEG2[DEG2$s24vMel_log2_change <=0 & DEG2$s24vIri_log2_change >0 & DEG2$MelvIri_log2_change >0,] #241
 Shared_Mel_Iri_DEG_on <- DEG2[DEG2$s24vMel_log2_change <0 & DEG2$s24vIri_log2_change <0,] #1105
@@ -264,7 +260,7 @@ write.table(s24_specific_DEG_on_on,"s24_specific_DEG_on_on_p0.01.txt",col.names 
 write.table(s24_specific_DEG_off_off,"s24_specific_DEG_off_off_p0.01.txt",col.names = T, row.names = F,quote = F, sep = "\t")
 
 
-################# MAKE GENE EXPRESSION PLOTS ###########
+################# MAKE GENE EXPRESSION PLOTS (check to make sure samples reflect cell type biology)###########
 #15somite vs 24hpf
 res_15pos_24hpf $log2FoldChange <- res_15pos_24hpf $log2FoldChange*-1
 
@@ -354,19 +350,19 @@ with(res_Mel_Iri[IriGene, ], {
 DEG2_genenames<- read.table("DEG_p0.01_ENSEMBL_to_Gene_Name.txt",header = T, ,quote = "", sep = "\t",stringsAsFactors = F) #from BioMart
 colnames(DEG2_genenames) <- c("gene","genename")
 DEG3 <- merge(DEG2,DEG2_genenames, by = "gene", all.x = T)
-DEG3<-merge(DEG3,geneFPKM, by = "gene", all.x =T) ##ALL DEGs
+DEG3<-merge(DEG3,geneTPM, by = "gene", all.x =T) ##ALL DEGs
 DEG3[is.na(DEG3)] <-0
 
 ## All genes
 DEG2_genenames<- read.table("DEG_p0.01_ENSEMBL_to_Gene_Name.txt",header = T, ,quote = "", sep = "\t",stringsAsFactors = F) #from BioMart
 colnames(DEG2_genenames) <- c("gene","genename")
 DEG3 <- merge(DEG2,DEG2_genenames, by = "gene", all.x = T)
-DEG4<-merge(geneFPKM, DEG3,by = "gene", all.x =T)##ALL GENES
+DEG4<-merge(geneTPM, DEG3,by = "gene", all.x =T)##ALL GENES
 DEG4[is.na(DEG4)] <-0
 
 
 TF_DEG2 <- DEG3[DEG3$type == "TF",] 
-TF_DEG <- merge(TF_DEG2,geneFPKM,by = "gene",all.x=TRUE)
+TF_DEG <- merge(TF_DEG2,geneTPM,by = "gene",all.x=TRUE)
 TF_DEG$Ave_RPKM <- (TF_DEG$s15+TF_DEG$s24+TF_DEG$Mel+TF_DEG$Iri)/4
 TF_DEG2<- TF_DEG[,c(1:10,16)]
 library("ComplexHeatmap") ## For heatmap
@@ -427,7 +423,7 @@ TFs <- read.table("TFlist_for_heatmap.txt",header = T, ,quote = "", sep = "\t",s
 DEG2_genenames<- read.table("DEG_p0.01_ENSEMBL_to_Gene_Name.txt",header = T, ,quote = "", sep = "\t",stringsAsFactors = F) #from BioMart
 colnames(DEG2_genenames) <- c("gene","genename")
 TFs<- merge(TFs,DEG2_genenames, by = "gene", all.x = T)
-TFs<-merge(TFs,geneFPKM, by = "gene", all.x =T)
+TFs<-merge(TFs,geneTPM, by = "gene", all.x =T)
 TFs[is.na(TFs)] <-0
 
 TFs[TFs$gene == "ENSDARG00000007641",]$genename.x <- "msx1a"
@@ -484,157 +480,5 @@ All<-rbind(s15spec,P_off,sP_on,P_on,sM_on,M_on,M_off,sI_on,I_on,I_off)
 NCC <- rbind(s15spec,P_off)
 M <- rbind(sP_on,P_on,sM_on,M_on,M_off)
 I<-rbind(sP_on,P_on,sI_on,I_on,I_off)
-
-
-# Plot heatmap of differentially expressed TFs' expression fold change
-library("ComplexHeatmap") ## For heatmap
-library("circlize") ## For color options
-name <- All[,2]
-df.OG2 <- All[,c(3,4,5)]
-row.names(df.OG2) <- name
-colnames(df.OG2) <- c("15somite vs 24hpf", "24hpf vs Mel", "24hpf vs Iri")
-kclus2 <- kmeans(df.OG2,10)
-split2 <-  kclus2$cluster
-#ht2 = Heatmap(df.OG2, column_title = "TFs",name= "FoldChange",col = colorRamp2(c(-5, 0, 5), c("#c8e2f2", "#fffef2","#ffb0b0")), 
-#    cluster_rows = F, cluster_columns = FALSE,show_row_names = FALSE,split = split2)
-ht2 =  Heatmap(df.OG2, column_title = "DEG Transcription Factors",name= "Fold Change",col = colorRamp2(c(-5, 0, 5), c("#baffc9", "#fffef2","#c9c9ff")), 
-    cluster_rows = F, cluster_columns = FALSE,show_row_names = F)
-ht2
-
-df.OG <- I[,c(10,11,12,13)]
-row.names(df.OG) <- name
-kclus <- kmeans(df.OG,10)
-split <-  kclus$cluster
-#ht =Heatmap(df.OG, column_title = "TFs",name= "RPKM",col = colorRamp2(c(0,1,5,10,50), c("#e7eff4", "#c3f7dd","#c1fa9e","#fcda79","#ff526a")), 
-#    cluster_rows = F, cluster_columns = FALSE,show_row_names = FALSE,split = split)
-ht = Heatmap(df.OG, column_title = "TFs",name= "RPKM",col = colorRamp2(c(0,5,10,20,30), c("#0392cf", "#7bc043","#fdf498","#f37736","#ee4035")), 
-    cluster_rows = F, cluster_columns = FALSE,show_row_names = F)
-ht
-
-name <- NCC[,2]
-df.OG2 <- NCC[,c(3,4,5,6)]
-row.names(df.OG2) <- name
-colnames(df.OG2) <- c("15somite vs 24hpf", "24hpf vs Mel", "24hpf vs Iri","Mel vs Iri")
-kclus2 <- kmeans(df.OG2,10)
-split2 <-  kclus2$cluster
-#ht2 = Heatmap(df.OG2, column_title = "TFs",name= "FoldChange",col = colorRamp2(c(-5, 0, 5), c("#c8e2f2", "#fffef2","#ffb0b0")), 
-#    cluster_rows = F, cluster_columns = FALSE,show_row_names = FALSE,split = split2)
-ht_NCC =  Heatmap(df.OG2, column_title = "DEG Transcription Factors",name= "Fold Change",col = colorRamp2(c(-5, 0, 5), c("#baffc9", "#fffef2","#c9c9ff")), 
-    cluster_rows = F, cluster_columns = FALSE,show_row_names = T)
-ht_NCC
-
-# MEL
-M<-M[!(M$genename.x == "bhlhe41" & M$type == "24_Mel_Iri_ON"),]
-name <- M[,2]
-df.OG2 <- M[,c(3,4,5,6)]
-row.names(df.OG2) <- name
-colnames(df.OG2) <- c("15somite vs 24hpf", "24hpf vs Mel", "24hpf vs Iri","Mel vs Iri")
-kclus2 <- kmeans(df.OG2,10)
-split2 <-  kclus2$cluster
-#ht2 = Heatmap(df.OG2, column_title = "TFs",name= "FoldChange",col = colorRamp2(c(-5, 0, 5), c("#c8e2f2", "#fffef2","#ffb0b0")), 
-#    cluster_rows = F, cluster_columns = FALSE,show_row_names = FALSE,split = split2)
-ht_M =  Heatmap(df.OG2, column_title = "Mel-specific Transcription Factors",name= "Fold Change",col = colorRamp2(c(-5, 0, 5), c("#baffc9", "#fffef2","#c9c9ff")), 
-    cluster_rows = F, cluster_columns = FALSE,show_row_names = T)
-ht_M
-
-#IRI
-I<-I[!(I$genename.x == "bhlhe41" & I$type == "24_Mel_Iri_ON"),]
-name <- I[,2]
-df.OG2 <- I[,c(3,4,5,6)]
-row.names(df.OG2) <- name
-colnames(df.OG2) <- c("15somite vs 24hpf", "24hpf vs Mel", "24hpf vs Iri", "Mel vs Iri")
-kclus2 <- kmeans(df.OG2,10)
-split2 <-  kclus2$cluster
-#ht2 = Heatmap(df.OG2, column_title = "TFs",name= "FoldChange",col = colorRamp2(c(-5, 0, 5), c("#c8e2f2", "#fffef2","#ffb0b0")), 
-#    cluster_rows = F, cluster_columns = FALSE,show_row_names = FALSE,split = split2)
-ht_I =  Heatmap(df.OG2, column_title = "Iri-specific Transcription Factors",name= "Fold Change",col = colorRamp2(c(-5, 0, 5), c("#baffc9", "#fffef2","#c9c9ff")), 
-    cluster_rows = F, cluster_columns = FALSE,show_row_names = T)
-ht_I
-
-#MEL
-M<-M[!(M$genename.x == "bhlhe41" & M$type == "24_Mel_Iri_ON"),]
-name <- M[,2]
-df.OG2 <- M[,c(10,11,12,13)] ###RPKM
-row.names(df.OG2) <- name
-colnames(df.OG2) <- c("15somite NCC", "24hpf NCC", "Melanophore", "Iridophore")
-kclus2 <- kmeans(df.OG2,10)
-split2 <-  kclus2$cluster
-#ht2 = Heatmap(df.OG2, column_title = "TFs",name= "FoldChange",col = colorRamp2(c(-5, 0, 5), c("#c8e2f2", "#fffef2","#ffb0b0")), 
-#    cluster_rows = F, cluster_columns = FALSE,show_row_names = FALSE,split = split2)
-ht_M =  Heatmap(df.OG2, column_title = "Mel-specific Transcription Factors",name= "RPKM",col = colorRamp2(c(0,10,40,60,80), c("#bae1ff","#ffffba","#ffb3ba","#e0301e","#800000")), 
-    cluster_rows = F, cluster_columns = FALSE,show_row_names = T)
-ht_M
-
-#IRI
-I<-I[!(I$genename.x == "bhlhe41" & I$type == "24_Mel_Iri_ON"),]
-name <- I[,2]
-df.OG2 <- I[,c(10,11,12,13)] #RPKM
-row.names(df.OG2) <- name
-colnames(df.OG2) <- c("15somite NCC", "24hpf NCC", "Melanophore", "Iridophore")
-kclus2 <- kmeans(df.OG2,10)
-split2 <-  kclus2$cluster
-#ht2 = Heatmap(df.OG2, column_title = "TFs",name= "FoldChange",col = colorRamp2(c(-5, 0, 5), c("#c8e2f2", "#fffef2","#ffb0b0")), 
-#    cluster_rows = F, cluster_columns = FALSE,show_row_names = FALSE,split = split2)
-ht_I =  Heatmap(df.OG2, column_title = "Iri-specific Transcription Factors",name= "RPKM",col = colorRamp2(c(0,10,40,60,80), c("#bae1ff","#ffffba","#ffb3ba","#e0301e","#800000")), 
-    cluster_rows = F, cluster_columns = FALSE,show_row_names = T)
-ht_I
-
-
-dplyr::filter(TFlist_RPKM_DEG, grepl("tfe",genename))
-dplyr::filter(TFs, grepl("tfe",genename.x))
-
-##COFACTORS only DEGs
-CO_DEG2 <- DEG3[DEG3$type == "Cofactor",] #162
-
-library("ComplexHeatmap") ## For heatmap
-library("circlize") ## For color options
-name <- CO_DEG2[,1]
-df.OG <- CO_DEG2[,c(5,7,9)]
-row.names(df.OG) <- name
-
-kclus <- kmeans(df.OG,10)
-split <-  kclus$cluster
-ht = Heatmap(df.OG, column_title = "Mel-specific only DAR (closing)",name= "Methylation",col = colorRamp2(c(-5, 0, 5), c("#0392cf", "#fdf498","#ee4035")), 
-    cluster_rows = F, cluster_columns = FALSE,show_row_names = FALSE,split = split)
-ht
-
-Mel_specific_DEG_on <- CO_DEG2[CO_DEG2$s24vMel_log2_change <0 & CO_DEG2$s24vIri_log2_change >=0 & CO_DEG2$MelvIri_log2_change >0,] #2
-Mel_specific_DEG_off <- CO_DEG2[CO_DEG2$s24vMel_log2_change >0 & CO_DEG2$s24vIri_log2_change <=0 & CO_DEG2$MelvIri_log2_change <0,] #0
-Iri_specific_DEG_on <- CO_DEG2[CO_DEG2$s24vMel_log2_change >=0 & CO_DEG2$s24vIri_log2_change <0 & CO_DEG2$MelvIri_log2_change <0,] #4
-Iri_specific_DEG_off <- CO_DEG2[CO_DEG2$s24vMel_log2_change <=0 & CO_DEG2$s24vIri_log2_change >0 & CO_DEG2$MelvIri_log2_change >0,] #9
-Shared_Mel_Iri_DEG_on <- CO_DEG2[CO_DEG2$s24vMel_log2_change <0 & CO_DEG2$s24vIri_log2_change <0,] #12 
-Shared_Mel_Iri_DEG_off <- CO_DEG2[CO_DEG2$s24vMel_log2_change >0 & CO_DEG2$s24vIri_log2_change >0,] #64
-
-Mel_specific_DEG_on_loose <- CO_DEG2[CO_DEG2$s24vMel_log2_change <0 & CO_DEG2$s24vIri_log2_change >=0,] #8
-Mel_specific_DEG_off_loose <- CO_DEG2[CO_DEG2$s24vMel_log2_change >0 & CO_DEG2$s24vIri_log2_change <=0,] #21
-Iri_specific_DEG_on_loose <- CO_DEG2[CO_DEG2$s24vMel_log2_change >=0 & CO_DEG2$s24vIri_log2_change <0,] #10
-Iri_specific_DEG_off_loose <- CO_DEG2[CO_DEG2$s24vMel_log2_change <=0 & CO_DEG2$s24vIri_log2_change >0,] #31
-
-s24_specific_DEG_on_on <- CO_DEG2[CO_DEG2$s15v24hpf_log2_change < 0 & CO_DEG2$s24vMel_log2_change <=0 & CO_DEG2$s24vIri_log2_change <=0,] #3
-s24_specific_DEG_off_off <- CO_DEG2[CO_DEG2$s15v24hpf_log2_change > 0 & CO_DEG2$s24vMel_log2_change >=0 & CO_DEG2$s24vIri_log2_change >=0,] #8
-s24_specific_DEG_on_off <- CO_DEG2[CO_DEG2$s15v24hpf_log2_change < 0 & CO_DEG2$s24vMel_log2_change >0 & CO_DEG2$s24vIri_log2_change >0,] #1
-
-s24_Mel_DEG_on_on <- CO_DEG2[CO_DEG2$s15v24hpf_log2_change < 0 & CO_DEG2$s24vMel_log2_change ==0 & CO_DEG2$s24vIri_log2_change >0 & CO_DEG2$MelvIri_log2_change >=0,] #3
-s24_Iri_DEG_on_on <- CO_DEG2[CO_DEG2$s15v24hpf_log2_change < 0 & CO_DEG2$s24vIri_log2_change ==0 & CO_DEG2$s24vMel_log2_change >0 & CO_DEG2$MelvIri_log2_change <=0,] #1
-
-
-
-write.table(Mel_specific_DEG_on,"Mel_specific_COFACTOR_DEG_on_stringentParameters_p0.01.txt",col.names = T, row.names = F,quote = F, sep = "\t")
-#write.table(Mel_specific_DEG_off,"Mel_specific_COFACTOR_DEG_off_stringentParameters_p0.01.txt",col.names = T, row.names = F,quote = F, sep = "\t")
-write.table(Iri_specific_DEG_on,"Iri_specific_COFACTOR_DEG_on_stringentParameters_p0.01.txt",col.names = T, row.names = F,quote = F, sep = "\t")
-write.table(Iri_specific_DEG_off,"Iri_specific_COFACTOR_DEG_off_stringentParameters_p0.01.txt",col.names = T, row.names = F,quote = F, sep = "\t")
-write.table(Shared_Mel_Iri_DEG_on,"Shared_Mel_Iri_COFACTOR_DEG_on_p0.01.txt",col.names = T, row.names = F,quote = F, sep = "\t")
-write.table(Shared_Mel_Iri_DEG_off,"Shared_Mel_Iri_COFACTOR_DEG_off_p0.01.txt",col.names = T, row.names = F,quote = F, sep = "\t")
-write.table(Mel_specific_DEG_on_loose,"Mel_specific_COFACTOR_DEG_on_looseParameters_p0.01.txt",col.names = T, row.names = F,quote = F, sep = "\t")
-write.table(Mel_specific_DEG_off_loose,"Mel_specific_COFACTOR_DEG_off_looseParameters_p0.01.txt",col.names = T, row.names = F,quote = F, sep = "\t")
-write.table(Iri_specific_DEG_on_loose,"Iri_specific_COFACTOR_DEG_on_looseParameters_p0.01.txt",col.names = T, row.names = F,quote = F, sep = "\t")
-write.table(Iri_specific_DEG_off_loose,"Iri_specific_COFACTOR_DEG_off_looseParameters_p0.01.txt",col.names = T, row.names = F,quote = F, sep = "\t")
-write.table(s24_specific_DEG_on_on,"s24_specific_COFACTOR_DEG_on_on_p0.01.txt",col.names = T, row.names = F,quote = F, sep = "\t")
-write.table(s24_specific_DEG_off_off,"s24_specific_COFACTOR_DEG_off_off_p0.01.txt",col.names = T, row.names = F,quote = F, sep = "\t")
-write.table(s24_Mel_DEG_on_on,"Shared_s24_Mel_COFACTOR_DEG_on_on_p0.01.txt",col.names = T, row.names = F,quote = F, sep = "\t")
-write.table(s24_Iri_DEG_on_on,"Shared_s24_Iri_COFACTOR_DEG_on_on_p0.01.txt",col.names = T, row.names = F,quote = F, sep = "\t")
-write.table(s24_specific_DEG_on_off,"s24_specific_COFACTOR_DEG_on_OFF_p0.01.txt",col.names = T, row.names = F,quote = F, sep = "\t")
-
-
 
 
