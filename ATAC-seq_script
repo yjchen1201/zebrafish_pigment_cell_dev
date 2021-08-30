@@ -1,3 +1,18 @@
+#cutadapt v1.10: Used to trim adapter reads 
+#samtools version 1.3.1: Used to sort and downsample bam files for downstream processing
+#bismark v0.16.1: Used to align WGBS reads to the genome and call CpG methylation
+#bwa v0.7.15: bwa-mem used to align ATAC-seq reads to the genome
+#macs2 v2.1.1: Used to call peaks for ATAC-seq
+#STAR v2.5.1b: Used to align RNA-sequencing data
+#stringtie v1.3.3: Used to annotate aligned reads and quantify transcripts. 
+#picard v2.8.1: Used to mark and remove duplicate reads
+#bedtools v2.27.1: closest, intersect, shuffle command used as specified in manuscript 
+#meme v5.0.3: Used AME command to find motif enrichment and FIMO command to scan for motif presence 
+#R v3.3.0: Used to analyze sequencing library results
+#DSS v2.14.0 :Used to call differentially methylated regions
+#DESeq2 v1.12.4: Used to call differentially expressed genes
+#DiffBind v 2.2.12: Used to call differentially accessible regions/peaks
+#Metascape v3.0: Used for GO enrichment analysis
 ####################################################################     ATAC SEQ         #######################################################################
 ##Example used for Analysis##
 
@@ -12,8 +27,22 @@ samtools sort -o "SAMPLE_MAPQ30.sorted.bam" "SAMPLE_MAPQ30.bam"
 # Remove duplicates
 java -jar $PICARD_HOME/picard.jar MarkDuplicates REMOVE_SEQUENCING_DUPLICATES=True REMOVE_DUPLICATES=True "SAMPLE_MAPQ30.sorted.bam" "SAMPLE_MAPQ30.sorted.rmdup" "SAMPLE_MAPQ30.sorteddup_removed.txt" ASSUME_SORTED=true
 
-#Downsample reads to 35million 
-samtools view -h -b -s 0.3125 "SAMPLE_MAPQ30.sorted.rmdup.bam" > "SAMPLE_MAPQ30.sorted.rmdup.downsampled.bam"
+#Downsample reads to 35million (Example using samtool view -s subsample command)
+samtools view -h -b -s 0.3125 "SAMPLE_MAPQ30.sorted.rmdup.bam" > "SAMPLE.downsampled.bam"
+
+
+#Calculation Reads fraction in peaks (RFIP)#
+for i in *downsampled.bam; do samtools view $i | wc -l ;done
+#35020476 15somite_pos_Rep1.downsampled.bam
+#34969034 15somite_pos_Rep2.downsampled.bam
+#35007919 Iri_Rep1.downsampled.bam
+#35016630 Iri_Rep2.downsampled.bam
+#34991229 Mel_Rep1.downsampled.bam
+#35016721 Mel_Rep4.downsampled.bam
+#35040232 24hpf_pos_Rep1.downsampled.bam
+#34975335 24hpf_pos_Rep2.downsampled.bam
+
+
 
 # using MethylQA to covert bam to single-end read bed file
 methylQA density -Q 10 -r -T -E 0 -I 2000 -o "SAMPLE_MAPQ30.sorted.rmdup.downsampled" "danRer10_lite.size" "SAMPLE_MAPQ30.sorted.rmdup.downsampled.bam"
@@ -255,50 +284,9 @@ bedtools intersect -wo -a Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_pea
 bedtools intersect -wo -a 24hpf_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt -b Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > Both_IDR_peak_24hpfvsMel.txt
 bedtools intersect -wo -a 24hpf_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt -b Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > Both_IDR_peak_24hpfvsIri.txt
 
-# count IDR peaks
-wc -l *IDR_peak*.txt
-#93886 24hpf_only_IDR_peak_24hpfvsIri.txt
-#99513 24hpf_only_IDR_peak_24hpfvsMel.txt
-#77686 Both_IDR_peak_24hpfvsIri.txt
-#71091 Both_IDR_peak_24hpfvsMel.txt
-#68541 Both_IDR_peak_MelvsIri.txt
-#39563 Iri_only_IDR_peak_24hpfvsIri.txt
-#48272 Iri_only_IDR_peak_MelvsIri.txt
-#36424 Mel_only_IDR_peak_24hpfvsMel.txt
-#39149 Mel_only_IDR_peak_MelvsIri.txt
-  
-
-#Calculation Reads fraction in peaks (RFIP)#
-for i in *downsampled.bam; do samtools view $i | wc -l ;done
-#35020476 15somite_pos_Rep1.downsampled.bam
-#34969034 15somite_pos_Rep2.downsampled.bam
-#35007919 Iri_Rep1.downsampled.bam
-#35016630 Iri_Rep2.downsampled.bam
-#34991229 Mel_Rep1.downsampled.bam
-#35016721 Mel_Rep4.downsampled.bam
-#35040232 24hpf_pos_Rep1.downsampled.bam
-#34975335 24hpf_pos_Rep2.downsampled.bam
 
 
-# Intersect peaks with methylQA coverted bed file
-for i in *.downsampled.Tshift.fixed.bed; do echo $i & bedtools intersect -u -a $i -b ${i/.downsampled.Tshift.fixed.bed/.downsampled.Tshift.p01_peaks.IDR_0.05.narrowPeaks} | wc -l;done
 
-#15somite_pos_Rep1.downsampled.Tshift.fixed.bed
-#11912693/35020476*100 = 34.02%
-#15somite_pos_Rep2.downsampled.Tshift.fixed.bed
-#10000202/34969034*100 = 28.60%
-#24hpf_pos_Rep1.downsampled.Tshift.fixed.bed
-#13119291/35040232*100 = 37.44%
-#24hpf_pos_Rep2.downsampled.Tshift.fixed.bed
-#14238052/34975335*100 = 40.71%
-#Iri_Rep1.downsampled.Tshift.fixed.bed
-#9589977/35007919*100 = 27.39%
-#Iri_Rep2.downsampled.Tshift.fixed.bed
-#11504692/35016630*100 = 32.85%
-#Mel_Rep1.downsampled.Tshift.fixed.bed
-#9158589/34991229*100 = 26.17%
-#Mel_Rep4.downsampled.Tshift.fixed.bed
-#7948859/35016721*100 = 22.7%
 
 
 ### DiffBIND to call DARs (with IDR peaks and FDR 0.001) ("R analysis")###
@@ -413,7 +401,7 @@ dba.plotVenn(data.block,c(6,4,2),label1="15NCC vs 24NCC",label2="24NCC vs Mel",l
 cat Diffbind_15v24_ALL_peaks.bed  Diffbind_24vIri_ALL_peaks.bed  Diffbind_24vMel_ALL_peaks.bed  Diffbind_MelvIri_ALL_peaks.bed > All_DiffBind_peaks.txt
 sort -k1,1 -k2,2n All_DiffBind_peaks.txt > All_DiffBind_peaks.sorted.txt
 bedtools merge -i All_DiffBind_peaks.sorted.txt > All_DiffBind_peaks_merged.txt
-wc -l  All_DiffBind_peaks_merged.txt # 55380
+wc -l  All_DiffBind_peaks_merged.txt 
 rm All_DiffBind_peaks.txt
 rm All_DiffBind_peaks.sorted.txt
 
