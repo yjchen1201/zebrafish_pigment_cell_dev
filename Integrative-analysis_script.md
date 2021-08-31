@@ -1,20 +1,25 @@
-#cutadapt v1.10: Used to trim adapter reads 
-#samtools version 1.3.1: Used to sort and downsample bam files for downstream processing
-#bismark v0.16.1: Used to align WGBS reads to the genome and call CpG methylation
-#bwa v0.7.15: bwa-mem used to align ATAC-seq reads to the genome
-#macs2 v2.1.1: Used to call peaks for ATAC-seq
-#STAR v2.5.1b: Used to align RNA-sequencing data
-#stringtie v1.3.3: Used to annotate aligned reads and quantify transcripts. 
-#picard v2.8.1: Used to mark and remove duplicate reads
-#bedtools v2.27.1: closest, intersect, shuffle command used as specified in manuscript 
-#meme v5.0.3: Used AME command to find motif enrichment and FIMO command to scan for motif presence 
-#R v3.3.0: Used to analyze sequencing library results
-#DSS v2.14.0 :Used to call differentially methylated regions
-#DESeq2 v1.12.4: Used to call differentially expressed genes
-#DiffBind v 2.2.12: Used to call differentially accessible regions/peaks
-#Metascape v3.0: Used for GO enrichment analysis
+### Tool version
+- cutadapt v1.10: Used to trim adapter reads 
+- samtools version 1.3.1: Used to sort and downsample bam files for downstream processing
+- bismark v0.16.1: Used to align WGBS reads to the genome and call CpG methylation
+- bwa v0.7.15: bwa-mem used to align ATAC-seq reads to the genome
+- macs2 v2.1.1: Used to call peaks for ATAC-seq
+- STAR v2.5.1b: Used to align RNA-sequencing data
+- stringtie v1.3.3: Used to annotate aligned reads and quantify transcripts. 
+- picard v2.8.1: Used to mark and remove duplicate reads
+- bedtools v2.27.1: closest, intersect, shuffle command used as specified in manuscript 
+- meme v5.0.3: Used AME command to find motif enrichment and FIMO command to scan for motif presence 
+- R v3.3.0: Used to analyze sequencing library results
+- DSS v2.14.0 :Used to call differentially methylated regions
+- DESeq2 v1.12.4: Used to call differentially expressed genes
+- DiffBind v 2.2.12: Used to call differentially accessible regions/peaks
+- Metascape v3.0: Used for GO enrichment analysis
 
-################################ COMBINING WGBS METHYLATION DATA (d30) AND ATAC SEQ DATA (IDR DARs) ###################################################
+### Analysis script
+```{R}
+###################################### {R script} ######################################
+
+####################### COMBINING WGBS METHYLATION DATA (d30) AND ATAC SEQ DATA (IDR DARs) #######################
 #Compare DMR size vs DAR size
 combined_DMR <- read.table("Combined_DMRs_d30_p0.01_wINFO.bed",sep = "\t", header = F,quote = "", stringsAsFactors = F)
 combined_DAR <- read.table("All_DiffBind_peaks_merged_wINFO.bed",sep = "\t", header = F,quote = "", stringsAsFactors = F)
@@ -25,7 +30,9 @@ colnames(d) <- c("Type","Size")
 a <-ggplot(d, aes(Size, fill = Type, colour = Type)) + geom_density(alpha = 0.5, adjust = 1)+ggtitle(paste("Combined DMR (d30) & Combined DAR size distribution"))+theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 16), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
       labs(x = "Size (bp)", y = "Density")+scale_x_continuous(limits = c(0,2000))+scale_fill_manual(values = mypalette2[c(1,3)])+scale_color_manual(values=mypalette2[c(1,3)])+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))
 a
-
+```
+```{bash}
+###################################### {Bash script} ######################################
 #combine DMRs and DARs bed files to make a master list
 # combined DMRs and DARs
 cat Combined_DMRs_d30_p0.01_wINFO.bed All_DiffBind_peaks_merged_wINFO.bed >Combined_DMR_DAR.bed
@@ -34,9 +41,7 @@ sort -k1,1 -k2,2n Combined_DMR_DAR.bed > Combined_DMR_DAR.sorted.bed
 # merge regions
 bedtools merge -i Combined_DMR_DAR.sorted.bed > Combined_DMR_DAR.bed
 
-
 rm Combined_DMR_DAR.sorted.bed
-
 
 # Add DMR and DAR information to the combined DMR_DAR bed file
 bedtools intersect -wao -a Combined_DMR_DAR.bed -b Combined_DMRs_d30_p0.01_wINFO.bed > Combined_DMR_DAR_wDMRinfo.bed
@@ -54,7 +59,9 @@ bedtools intersect -wo -a Combined_DMR_DAR.bed -b 15somite_NCC_Combined_DSS.bed 
 bedtools intersect -wo -a Combined_DMR_DAR.bed -b 24hpf_NCC_Combined_DSS.bed > Combined_DMR_DAR_wMETH_24hpf.txt
 bedtools intersect -wo -a Combined_DMR_DAR.bed -b Mel_Combined_DSS.bed > Combined_DMR_DAR_wMETH_Mel.txt
 bedtools intersect -wo -a Combined_DMR_DAR.bed -b Iri_Combined_DSS.bed > Combined_DMR_DAR_wMETH_Iri.txt
-
+```
+```{R}
+###################################### {R script} ######################################
 # Pull out regions with methylation information from each samples
 DMAR_meth15<- read.table("Combined_DMR_DAR_wMETH_15s.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
 DMAR_meth24<- read.table("Combined_DMR_DAR_wMETH_24hpf.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
@@ -80,8 +87,6 @@ DMAR_meth24_aggregate <- ddply(DMAR_meth24,.(V1,V2,V3),summarise,CpGcount=sum(V9
 DMAR_methM_aggregate <- ddply(DMAR_methM,.(V1,V2,V3),summarise,CpGcount=sum(V9),AveMeth=mean(meth))
 DMAR_methI_aggregate <- ddply(DMAR_methI,.(V1,V2,V3),summarise,CpGcount=sum(V9),AveMeth=mean(meth))
 
-
-
 #parse data together
 #  Read combined region information
 DMAR_DAR<- read.table("Combined_DMR_DAR_wDARinfo.bed",sep = "\t", header = F,quote = "", stringsAsFactors = F)
@@ -98,7 +103,6 @@ DMAR_IDR15$chrompos<- paste(DMAR_IDR15$V1,":",DMAR_IDR15$V2,"-",DMAR_IDR15$V3,se
 DMAR_IDR24$chrompos<- paste(DMAR_IDR24$V1,":",DMAR_IDR24$V2,"-",DMAR_IDR24$V3,sep = "")
 DMAR_IDRM$chrompos<- paste(DMAR_IDRM$V1,":",DMAR_IDRM$V2,"-",DMAR_IDRM$V3,sep = "")
 DMAR_IDRI$chrompos<- paste(DMAR_IDRI$V1,":",DMAR_IDRI$V2,"-",DMAR_IDRI$V3,sep = "")
-
 
 DMAR_meth15_aggregate$chrompos<- paste(DMAR_meth15_aggregate$V1,":",DMAR_meth15_aggregate$V2,"-",DMAR_meth15_aggregate$V3,sep = "")
 DMAR_meth24_aggregate$chrompos<- paste(DMAR_meth24_aggregate$V1,":",DMAR_meth24_aggregate$V2,"-",DMAR_meth24_aggregate$V3,sep = "")
@@ -129,15 +133,17 @@ DMAR <- DMAR[,c(2,3,4,1,27,5:26)]
 DMAR$aveCpG <- apply(DMAR,1,function(x) {(as.numeric(x[24])+as.numeric(x[25])+as.numeric(x[26])+as.numeric(x[27]))/4})
 DMAR$CpGdensity100bp <- apply(DMAR,1,function(x) {(as.numeric(x[28])/as.numeric(x[5]))*100})
 write.table(DMAR, "All_DMAR_Combined_wINFO.bed", row.names = F, col.names = T, sep = "\t",quote =F)
-
-
+```
+```{bash}
 ########### Annotate Peaks ##########
+###################################### {Bash script} ####################################
 # annotatePeaks.pl is from HOMER （http://homer.ucsd.edu/homer/ngs/annotation.html）
 annotatePeaks.pl All_DMAR_Combined_wINFO.bed danRer10 -annStats All_DMAR_Combined_wINFO.annstats > All_DMAR_Combined_wINFO.annotated.txt
 annotatePeaks.pl All_DiffBind_peaks_merged.txt danRer10 -annStats All_DiffBind_peaks_merged.annstats > All_DiffBind_peaks_merged.annotated.txt
 annotatePeaks.pl Combined_DMRs_d30_p0.01.txt danRer10 -annStats Combined_DMRs_d30_p0.01.annstats > Combined_DMRs_d30_p0.01.annotated.txt
-
-
+```
+```{R}
+###################################### {R script} ######################################
 DMAR <- read.table("All_DMAR_Combined_wINFO.bed", sep = "\t", header = T, quote = "",stringsAsFactors = F)
 anno_DMAR <- read.delim("All_DMAR_Combined_wINFO.annotated.txt",skip =1, header = F, quote = "",stringsAsFactors = F)
 colnames(anno_DMAR)[1] <- "chrompos"
@@ -151,8 +157,6 @@ DMAR <- DMAR[,c(2,3,4,1,5:31)]
 write.table(DMAR, "All_DMAR_Combined_wINFO.annotated.bed", row.names = F, col.names = T, sep = "\t",quote =F)
 # without header
 write.table(DMAR, "All_DMAR_Combined_wINFO.annotated2.bed", row.names = F, col.names = F, sep = "\t",quote =F)
-
-
 
 
 #Plot size distribution of DAR, DMR, DMAR
@@ -190,14 +194,12 @@ write.table(Only_DMRs_Iri_specific_hyper, "Solo_DMRs_Iri_specific_hyper.DMAR.bed
 write.table(Only_DMRs_M_I_shared_hypo, "Solo_DMRs_Mel_Iri_shared_hypo.DMAR.bed", row.names = F, col.names = F, sep = "\t",quote =F)
 write.table(Only_DMRs_M_I_shared_hyper, "Solo_DMRs_Mel_Iri_shared_hyper.DMAR.bed", row.names = F, col.names = F, sep = "\t",quote =F)
 
-
 Only_DMRs_Mel_specific_hypo_00 <- Only_DMRs_Mel_specific_hypo[Only_DMRs_Mel_specific_hypo$IDR_s24 ==0 & Only_DMRs_Mel_specific_hypo$IDR_M ==0,] #1993
 Only_DMRs_Mel_specific_hypo_10 <- Only_DMRs_Mel_specific_hypo[Only_DMRs_Mel_specific_hypo$IDR_s24 >0 & Only_DMRs_Mel_specific_hypo$IDR_M ==0,] #731
 Only_DMRs_Mel_specific_hypo_01 <- Only_DMRs_Mel_specific_hypo[Only_DMRs_Mel_specific_hypo$IDR_s24 ==0 & Only_DMRs_Mel_specific_hypo$IDR_M >0,] #1607
 Only_DMRs_Mel_specific_hypo_11 <- Only_DMRs_Mel_specific_hypo[Only_DMRs_Mel_specific_hypo$IDR_s24 >0 & Only_DMRs_Mel_specific_hypo$IDR_M >0,] #2370 
 
 write.table(Only_DMRs_Mel_specific_hypo_11, "Solo_DMRs_Mel_specific_hypo_alwaysOPEN.DMAR.bed", row.names = F, col.names = F, sep = "\t",quote =F)
-
 
 Only_DMRs_Iri_specific_hypo_00 <- Only_DMRs_Iri_specific_hypo[Only_DMRs_Iri_specific_hypo$IDR_s24 ==0 & Only_DMRs_Iri_specific_hypo$IDR_I ==0,] #1983
 Only_DMRs_Iri_specific_hypo_10 <- Only_DMRs_Iri_specific_hypo[Only_DMRs_Iri_specific_hypo$IDR_s24 >0 & Only_DMRs_Iri_specific_hypo$IDR_I ==0,] #335
@@ -206,18 +208,15 @@ Only_DMRs_Iri_specific_hypo_11 <- Only_DMRs_Iri_specific_hypo[Only_DMRs_Iri_spec
 
 write.table(Only_DMRs_Iri_specific_hypo_11, "Solo_DMRs_Iri_specific_hypo_alwaysOPEN.DMAR.bed", row.names = F, col.names = F, sep = "\t",quote =F)
 
-
 Only_DMRs_Mel_specific_hyper_00 <- Only_DMRs_Mel_specific_hyper[Only_DMRs_Mel_specific_hyper$IDR_s24 ==0 & Only_DMRs_Mel_specific_hyper$IDR_M ==0,] #193
 Only_DMRs_Mel_specific_hyper_10 <- Only_DMRs_Mel_specific_hyper[Only_DMRs_Mel_specific_hyper$IDR_s24 >0 & Only_DMRs_Mel_specific_hyper$IDR_M ==0,] #10
 Only_DMRs_Mel_specific_hyper_01 <- Only_DMRs_Mel_specific_hyper[Only_DMRs_Mel_specific_hyper$IDR_s24 ==0 & Only_DMRs_Mel_specific_hyper$IDR_M >0,] #0
 Only_DMRs_Mel_specific_hyper_11 <- Only_DMRs_Mel_specific_hyper[Only_DMRs_Mel_specific_hyper$IDR_s24 >0 & Only_DMRs_Mel_specific_hyper$IDR_M >0,] #7 
 
-
 Only_DMRs_Iri_specific_hyper_00 <- Only_DMRs_Iri_specific_hyper[Only_DMRs_Iri_specific_hyper$IDR_s24 ==0 & Only_DMRs_Iri_specific_hyper$IDR_I ==0,] #269
 Only_DMRs_Iri_specific_hyper_10 <- Only_DMRs_Iri_specific_hyper[Only_DMRs_Iri_specific_hyper$IDR_s24 >0 & Only_DMRs_Iri_specific_hyper$IDR_I ==0,] #10
 Only_DMRs_Iri_specific_hyper_01 <- Only_DMRs_Iri_specific_hyper[Only_DMRs_Iri_specific_hyper$IDR_s24 ==0 & Only_DMRs_Iri_specific_hyper$IDR_I >0,] #1
 Only_DMRs_Iri_specific_hyper_11 <- Only_DMRs_Iri_specific_hyper[Only_DMRs_Iri_specific_hyper$IDR_s24 >0 & Only_DMRs_Iri_specific_hyper$IDR_I >0,] #9
-
 
 Only_DMRs_M_I_shared_hypo_000 <- Only_DMRs_M_I_shared_hypo[Only_DMRs_M_I_shared_hypo$IDR_s24 ==0 & Only_DMRs_M_I_shared_hypo$IDR_I ==0 & Only_DMRs_M_I_shared_hypo$IDR_M ==0,] #338
 Only_DMRs_M_I_shared_hypo_100 <- Only_DMRs_M_I_shared_hypo[Only_DMRs_M_I_shared_hypo$IDR_s24 >0 & Only_DMRs_M_I_shared_hypo$IDR_I ==0 & Only_DMRs_M_I_shared_hypo$IDR_M ==0,] #137
@@ -227,7 +226,6 @@ Only_DMRs_M_I_shared_hypo_011 <- Only_DMRs_M_I_shared_hypo[Only_DMRs_M_I_shared_
 Only_DMRs_M_I_shared_hypo_111 <- Only_DMRs_M_I_shared_hypo[Only_DMRs_M_I_shared_hypo$IDR_s24 >0 & Only_DMRs_M_I_shared_hypo$IDR_I >0& Only_DMRs_M_I_shared_hypo$IDR_M >0,] #2416
 
 write.table(Only_DMRs_Iri_specific_hypo_11, "Solo_DMRs_Mel_Iri_shared_hypo_alwaysOPEN.DMAR.bed", row.names = F, col.names = F, sep = "\t",quote =F)
-
 
 Only_DMRs_M_I_shared_hyper_000 <- Only_DMRs_M_I_shared_hyper[Only_DMRs_M_I_shared_hyper$IDR_s24 ==0 & Only_DMRs_M_I_shared_hyper$IDR_I ==0 & Only_DMRs_M_I_shared_hyper$IDR_M ==0,] #110
 Only_DMRs_M_I_shared_hyper_100 <- Only_DMRs_M_I_shared_hyper[Only_DMRs_M_I_shared_hyper$IDR_s24 >0 & Only_DMRs_M_I_shared_hyper$IDR_I ==0 & Only_DMRs_M_I_shared_hyper$IDR_M ==0,] #17
@@ -263,11 +261,8 @@ write.table(Only_DARs_Iri_specific_closed, "Solo_DARs_Iri_specific_closing.DMAR.
 write.table(Only_DARs_M_I_shared_open, "Solo_DARs_Mel_Iri_shared_opening.DMAR.bed", row.names = F, col.names = F, sep = "\t",quote =F)
 write.table(Only_DARs_M_I_shared_closed, "Solo_DARs_Mel_Iri_shared_closing.DMAR.bed", row.names = F, col.names = F, sep = "\t",quote =F)
 
-
 Functional_Only_DARs_Mel_specific_open <- Only_DARs_Mel_specific_open[Only_DARs_Mel_specific_open$Meth_Mel >0 & Only_DARs_Mel_specific_open$Meth_Mel <= 30 & Only_DARs_Mel_specific_open$Meth_s24 >0 & Only_DARs_Mel_specific_open$Meth_s24 <=30,]
 as.data.frame(table(Functional_Only_DARs_Mel_specific_open$Annotation))
-
-
 
 #make heatmap Mel specific DAR vs meth
 library("ComplexHeatmap") ## For heatmap
@@ -348,7 +343,6 @@ p
 
 
 
-
 #CpG density distribution in epigenetically dynamic regions
 mypalette <- brewer.pal(8,"Pastel1")
 d<- data.frame(c(rep("k1",nrow(Only_DARs_Mel_specific_closed_c1)),rep("k2",nrow(Only_DARs_Mel_specific_closed_c2)),rep("k3",nrow(Only_DARs_Mel_specific_closed_c3)),rep("k4",nrow(Only_DARs_Mel_specific_closed_c4)),rep("k5",nrow(Only_DARs_Mel_specific_closed_c5)),rep("k6",nrow(Only_DARs_Mel_specific_closed_c6)),rep("k7",nrow(Only_DARs_Mel_specific_closed_c7)),rep("k8",nrow(Only_DARs_Mel_specific_closed_c8)),rep("k9",nrow(Only_DARs_Mel_specific_closed_c9)),rep("k10",nrow(Only_DARs_Mel_specific_closed_c10))),c(Only_DARs_Mel_specific_closed_c1$CpGdensity100bp, Only_DARs_Mel_specific_closed_c2$CpGdensity100bp, Only_DARs_Mel_specific_closed_c3$CpGdensity100bp, Only_DARs_Mel_specific_closed_c4$CpGdensity100bp, Only_DARs_Mel_specific_closed_c5$CpGdensity100bp, Only_DARs_Mel_specific_closed_c6$CpGdensity100bp, Only_DARs_Mel_specific_closed_c7$CpGdensity100bp, Only_DARs_Mel_specific_closed_c8$CpGdensity100bp, Only_DARs_Mel_specific_closed_c9$CpGdensity100bp, Only_DARs_Mel_specific_closed_c10$CpGdensity100bp))
@@ -393,7 +387,6 @@ DMAR_IDR15$chrompos<- paste(DMAR_IDR15$V1,":",DMAR_IDR15$V2,"-",DMAR_IDR15$V3,se
 DMAR_IDR24$chrompos<- paste(DMAR_IDR24$V1,":",DMAR_IDR24$V2,"-",DMAR_IDR24$V3,sep = "")
 DMAR_IDRM$chrompos<- paste(DMAR_IDRM$V1,":",DMAR_IDRM$V2,"-",DMAR_IDRM$V3,sep = "")
 DMAR_IDRI$chrompos<- paste(DMAR_IDRI$V1,":",DMAR_IDRI$V2,"-",DMAR_IDRI$V3,sep = "")
-
 
 
 #methylation value, filter out DMRs with less than ave 5 cov
@@ -567,10 +560,9 @@ dmarplot2$Name <- factor(dmarplot2$Name, levels = c("solohyperDMR","solohypoDMR"
 p <- ggplot(data=dmarplot2, aes(x=Cell, y=Count, fill=Name)) +geom_bar(stat="identity",colour = "black", position=position_dodge())+ggtitle("DMAR count")+theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 16), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
       labs(x = "Cell state", y = "Number of DMARs")+scale_fill_manual(values = mypalette[c(1,2,3,4,9,10,7,8)])+scale_y_continuous(lim = c(0,16000))+scale_color_manual(values=mypalette[c(1,2,3,4,9,10,7,8)])+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))+geom_text(data=dmarplot2,position = position_dodge(width =0.9),aes(x=Cell,y=Count+400,label=Count),fontface='bold',hjust=0.5,size=5)
 p
-
-
-
-
+```
+```{bash}
+###################################### {Bash script} ######################################
 ####### FOR methylC track on new browser ######
 chr1    10542   10543   CG      0.923   -       26 <--- this is the format. combine all CpG strands so all will be +
 
@@ -600,14 +592,10 @@ ln -s /scratch/jjang/PIGMENT_PROJECT/Pigment_BS_ALL/DSS/*_forNewBrowser_methylCt
 ln -s /scratch/jjang/PIGMENT_PROJECT/Pigment_BS_ALL/DSS/*_forNewBrowser_methylCtrack.sorted.bed.gz.tbi .
 
 
-
-
-
 ## Use https://biit.cs.ut.ee/gprofiler/orth for gene conversion for AME ##
 Some gene names still missing. Manually curate using http://www.zebrafishmine.org/template.do?name=Human_Gene_Curated_Zeb_Ortho. Use https://resources.altius.org/~jvierstra/projects/motif-clustering/ to identify cluster and DBD
 MASTER-LIST-TF-orthologs.csv
 MASTER-LIST-TF-orthologs_converted_ensemble_withMotifClusterInfo.csv
-
 
 ######### Use AME to call motif enrichment #########
 #make background file of all peaks#
@@ -674,8 +662,9 @@ ame --verbose 1 --oc Mel_specific_openDMAR -scoring totalhits --method fisher --
 awk 'OFS="\t" {print $4,$1,$2,$4":"$1"-"$2}' Mel_Iri_shared_hypo_opening.DMAR.bed > Mel_Iri_shared_hypo_opening.DMAR.onlyCoord.bed
 twoBitToFa -bed=Mel_Iri_shared_hypo_opening.DMAR.onlyCoord.bed danRer10.2bit Mel_Iri_shared_hypo_opening.DMAR.fasta
 ame --verbose 1 --oc Mel_Iri_shared_openDMAR -scoring totalhits --method fisher --control All_IDR_peaks_Merged.fa Mel_Iri_shared_hypo_opening.DMAR.fasta /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/JASPAR_2016_Vertebrate.meme
-
-
+```
+```{R}
+###################################### {R script} ######################################
 #Load AME findings on R
 masterTF_orth_list <- read.csv("MASTER-LIST-TF-orthologs_converted_ensemble_withMotifClusterInfo.csv", header = T, sep = ",", stringsAsFactors = F)
 colnames(masterTF_orth_list) <- c("motif_alt_ID","gene","genename","Cluster","DBD")
@@ -995,8 +984,6 @@ ht3 = Heatmap(df.OG, column_title = "TFs",name= "-log pval",col = colorRamp2(c(0
 ht3 #6 x 3
 
 
-
-
 #shared open downregulated
 shared_hypoDMR_down_AME_filtered <-Shared_hypoDMR_AME_genename_DEG[Shared_hypoDMR_AME_genename_DEG$s24vIri_log2_change >0 & Shared_hypoDMR_AME_genename_DEG$s24vMel_log2_change >0,c("genename.x","pvalue_log","DBD","s24vMel_log2_change","s24vIri_log2_change","MelvIri_log2_change","s24","Mel","Iri")] #downreg in both
 shared_openDAR_down_AME_filtered <-Shared_openDAR_AME_genename_DEG[Shared_openDAR_AME_genename_DEG$s24vIri_log2_change >0 & Shared_openDAR_AME_genename_DEG$s24vMel_log2_change >0,c("genename.x","pvalue_log","DBD","s24vMel_log2_change","s24vIri_log2_change","MelvIri_log2_change","s24","Mel","Iri")] # downreg in both
@@ -1065,9 +1052,6 @@ row.names(df.OG) <- name
 ht3 = Heatmap(df.OG, column_title = "TFs",name= "-log pval",col = colorRamp2(c(0,10,200,300,400), c("#ffffff","#f1ebe1","#c0cfb2","#8ba888","#44624a")), 
     cluster_rows = F, cluster_columns = FALSE,show_row_names = F)
 ht3 #6 x 3
-
-
-
 
 
 
@@ -1206,7 +1190,6 @@ sox10_AME[is.na(sox10_AME)] <-0
 colnames(sox10_AME)<-c("gene","s24vMel_log2_change","s24vIri_log2_change","MelvIri_log2_change","s24","Mel","Iri","Iri_hypoDMR","Iri_openDAR","Iri_openDMAR","Mel_hypoDMR","Mel_openDAR","Mel_openDMAR","shared_hypoDMR","shared_openDAR","shared_openDMAR","Iri_closeDAR","Mel_closeDAR","shared_closeDAR")
 
 
-
 mitfa_AME<-Reduce(function(x, y) merge(x, y, by=c("genename.x","s24vMel_log2_change","s24vIri_log2_change","MelvIri_log2_change","s24","Mel","Iri"), all = T), list(Iri_hypoDMR_AME_genename_DEG[Iri_hypoDMR_AME_genename_DEG$genename.x == "mitfa",c("genename.x","pvalue_log","s24vMel_log2_change","s24vIri_log2_change","MelvIri_log2_change","s24","Mel","Iri")]
 ,Iri_openDAR_AME_genename_DEG[Iri_openDAR_AME_genename_DEG$genename.x == "mitfa",c("genename.x","pvalue_log","s24vMel_log2_change","s24vIri_log2_change","MelvIri_log2_change","s24","Mel","Iri")]
 ,Iri_openDMAR_AME_genename_DEG[Iri_openDMAR_AME_genename_DEG$genename.x == "mitfa",c("genename.x","pvalue_log","s24vMel_log2_change","s24vIri_log2_change","MelvIri_log2_change","s24","Mel","Iri")]
@@ -1224,7 +1207,6 @@ mitfa_AME[is.na(mitfa_AME)] <-0
 colnames(mitfa_AME)<-c("gene","s24vMel_log2_change","s24vIri_log2_change","MelvIri_log2_change","s24","Mel","Iri","Iri_hypoDMR","Iri_openDAR","Iri_openDMAR","Mel_hypoDMR","Mel_openDAR","Mel_openDMAR","shared_hypoDMR","shared_openDAR","shared_openDMAR","Iri_closeDAR","Mel_closeDAR","shared_closeDAR")
 
 
-
 tfec_AME<-Reduce(function(x, y) merge(x, y, by=c("genename.x","s24vMel_log2_change","s24vIri_log2_change","MelvIri_log2_change","s24","Mel","Iri"), all = T), list(Iri_hypoDMR_AME_genename_DEG[Iri_hypoDMR_AME_genename_DEG$genename.x == "tfec",c("genename.x","pvalue_log","s24vMel_log2_change","s24vIri_log2_change","MelvIri_log2_change","s24","Mel","Iri")]
 ,Iri_openDAR_AME_genename_DEG[Iri_openDAR_AME_genename_DEG$genename.x == "tfec",c("genename.x","pvalue_log","s24vMel_log2_change","s24vIri_log2_change","MelvIri_log2_change","s24","Mel","Iri")]
 ,Iri_openDMAR_AME_genename_DEG[Iri_openDMAR_AME_genename_DEG$genename.x == "tfec",c("genename.x","pvalue_log","s24vMel_log2_change","s24vIri_log2_change","MelvIri_log2_change","s24","Mel","Iri")]
@@ -1240,8 +1222,6 @@ tfec_AME<-Reduce(function(x, y) merge(x, y, by=c("genename.x","s24vMel_log2_chan
 
 tfec_AME[is.na(tfec_AME)] <-0
 colnames(tfec_AME)<-c("gene","s24vMel_log2_change","s24vIri_log2_change","MelvIri_log2_change","s24","Mel","Iri","Iri_hypoDMR","Iri_openDAR","Iri_openDMAR","Mel_hypoDMR","Mel_openDAR","Mel_openDMAR","shared_hypoDMR","shared_openDAR","shared_openDMAR","Iri_closeDAR","Mel_closeDAR","shared_closeDAR")
-
-
 
 
 ######### IDENTIFY TOP 3000 REGIONS for DMR, DAR AND DMAR #############
@@ -1293,7 +1273,10 @@ Iri_hypo <- combined_dmr_wInfo[combined_dmr_wInfo$s24vIri_areastat>0 & combined_
 Iri_hypo <-Iri_hypo[order(-Iri_hypo$s24vIri_areastat),]
 Iri_hypo <- Iri_hypo[c(1:5000),]
 write.table(Iri_hypo[,c(2,3,4,1)],"Iri-specific-hypoDMR-top5000_forMetascape.bed",sep = "\t", col.names = F, row.names = F, quote = F)
+```
 
+```{bash}
+###################################### {Bash script} ######################################
 sort -k1,1 -k2,2n Mel-specific-hypoDMR-top3000_forMetascape.bed > Mel-specific-hypoDMR-top3000_forMetascape_sorted.bed
 sort -k1,1 -k2,2n Mel-specific-hypoDMR-top5000_forMetascape.bed > Mel-specific-hypoDMR-top5000_forMetascape_sorted.bed
 sort -k1,1 -k2,2n Iri-specific-hypoDMR-top5000_forMetascape.bed > Iri-specific-hypoDMR-top5000_forMetascape_sorted.bed
@@ -1314,8 +1297,10 @@ write.table(Mel_specifc_DMAR[,c(1,2,3,4)],"Mel-specific-DMAR_forMetascape.bed",s
 
 bedtools closest -a Iri-specific-DMAR_forMetascape.bed -b Danio_rerio.GRCz10.85.GENE.PROMOTER_sorted.bed > Iri-specific-DMAR_forMetascape_closestpromoter.bed
 bedtools closest -a Mel-specific-DMAR_forMetascape.bed -b Danio_rerio.GRCz10.85.GENE.PROMOTER_sorted.bed > Mel-specific-DMAR_forMetascape_closestpromoter.bed
+```
 
-
+```{R}
+###################################### {R script} ######################################
 ##FOR DAR, pick highest fold change top 5000
 Mel_specific_openDAR <-DMAR[DMAR$DARs24vMel > 0 & DMAR$DARs24vIri <=0,]
 Mel_specific_openDAR <- Mel_specific_openDAR[order(-Mel_specific_openDAR$DARs24vMel),]
@@ -1326,12 +1311,14 @@ Iri_specific_openDAR <-DMAR[DMAR$DARs24vMel <= 0 & DMAR$DARs24vIri >0,]
 Iri_specific_openDAR <- Iri_specific_openDAR[order(-Iri_specific_openDAR$DARs24vIri),]
 Iri_specific_openDAR <- Iri_specific_openDAR[c(1:5000),]
 write.table(Iri_specific_openDAR[,c(1,2,3,4)],"Iri-specific-openDAR_forMetascape.bed",sep = "\t", col.names = F, row.names = F, quote = F)
-
+```
+```{bash}
+###################################### {Bash script} ######################################
 bedtools closest -a /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/Iri-specific-openDAR_forMetascape.bed -b /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/Danio_rerio.GRCz10.85.GENE.PROMOTER_sorted.bed > /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/Iri-specific-openDAR_forMetascape_closestpromoter.bed
 bedtools closest -a /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/Mel-specific-openDAR_forMetascape.bed -b /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/Danio_rerio.GRCz10.85.GENE.PROMOTER_sorted.bed > /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/Mel-specific-openDAR_forMetascape_closestpromoter.bed
-
-
-
+```
+```{R}
+###################################### {R script} ######################################
 #make heatmap of methylation status in DARs
 library("ComplexHeatmap") ## For heatmap
 library("circlize") ## For color options
@@ -1349,9 +1336,6 @@ library(dendextend)
 row_dend = hclust(dist(df.OG2),method="ward.D")
 ht3 = Heatmap(df.OG2, column_title = "Methylation of 15somite to 24hpf DARs",name= "Methylaton %",col = colorRamp2(c(0, 50, 100), c("#0392cf", "#fdf498","#ee4035")), cluster_rows = color_branches(row_dend, k = 4), cluster_columns = FALSE,show_row_names = FALSE)
 ht3
-
-
-
 
 
 ############## Promoter centric Analysis (got danRer10 promoter (1kb upstream TSS) from UCSC Table browser) #################
@@ -1395,13 +1379,14 @@ prom_methI_aggregate <- ddply(prom_methI,.(V1,V2,V3,V4,V5),summarise,CpGcount=su
 
 m<-Reduce(function(x, y) merge(x, y, by=c("V1","V2","V3"), all.x = T), list(prom,prom_meth15_aggregate[,c(1,2,3,6,7)],prom_meth24_aggregate[,c(1,2,3,6,7)],prom_methM_aggregate[,c(1,2,3,6,7)],prom_methI_aggregate[,c(1,2,3,6,7)]))
 
-
+###################################### {Bash script} ######################################
 #overlap IDR peaks
 bedtools intersect -c -a /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/Danio_rerio.GRCz10.85.GENE.PROMOTER.bed -b /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/ATAC_only/IDR_peaks_0.05/15somite_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/ENSEMBL_danRer10_gene_UNIQUE_promoters_1kb_upstream_wIDRpeaks15s.bed
 bedtools intersect -c -a /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/Danio_rerio.GRCz10.85.GENE.PROMOTER.bed -b /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/ATAC_only/IDR_peaks_0.05/24hpf_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/ENSEMBL_danRer10_gene_UNIQUE_promoters_1kb_upstream_wIDRpeaks24s.bed
 bedtools intersect -c -a /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/Danio_rerio.GRCz10.85.GENE.PROMOTER.bed -b /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/ATAC_only/IDR_peaks_0.05/Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/ENSEMBL_danRer10_gene_UNIQUE_promoters_1kb_upstream_wIDRpeaksMel.bed
 bedtools intersect -c -a /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/Danio_rerio.GRCz10.85.GENE.PROMOTER.bed -b /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/ATAC_only/IDR_peaks_0.05/Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/ENSEMBL_danRer10_gene_UNIQUE_promoters_1kb_upstream_wIDRpeaksIri.bed
 
+###################################### {R script} ######################################
 prom_IDR15<- read.table("ENSEMBL_danRer10_gene_UNIQUE_promoters_1kb_upstream_wIDRpeaks15s.bed",sep = "\t", header = F,quote = "", stringsAsFactors = F)
 prom_IDR24<- read.table("ENSEMBL_danRer10_gene_UNIQUE_promoters_1kb_upstream_wIDRpeaks24s.bed",sep = "\t", header = F,quote = "", stringsAsFactors = F)
 prom_IDRM<- read.table("ENSEMBL_danRer10_gene_UNIQUE_promoters_1kb_upstream_wIDRpeaksMel.bed",sep = "\t", header = F,quote = "", stringsAsFactors = F)
