@@ -15,7 +15,7 @@
 - DiffBind v 2.2.12: Used to call differentially accessible regions/peaks
 - Metascape v3.0: Used for GO enrichment analysis
 
-### Analysis script
+### Analysis example
 ```{bash}
 ###################################################### {bash script} ######################################################
 ## Example of BS-seq pipeline#
