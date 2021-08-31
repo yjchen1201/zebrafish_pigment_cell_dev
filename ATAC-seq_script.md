@@ -1,19 +1,19 @@
 ### Tool version
 - cutadapt v1.10: Used to trim adapter reads 
 - samtools version 1.3.1: Used to sort and downsample bam files for downstream processing
-#bismark v0.16.1: Used to align WGBS reads to the genome and call CpG methylation
-#bwa v0.7.15: bwa-mem used to align ATAC-seq reads to the genome
-#macs2 v2.1.1: Used to call peaks for ATAC-seq
-#STAR v2.5.1b: Used to align RNA-sequencing data
-#stringtie v1.3.3: Used to annotate aligned reads and quantify transcripts. 
-#picard v2.8.1: Used to mark and remove duplicate reads
-#bedtools v2.27.1: closest, intersect, shuffle command used as specified in manuscript 
-#meme v5.0.3: Used AME command to find motif enrichment and FIMO command to scan for motif presence 
-#R v3.3.0: Used to analyze sequencing library results
-#DSS v2.14.0 :Used to call differentially methylated regions
-#DESeq2 v1.12.4: Used to call differentially expressed genes
-#DiffBind v 2.2.12: Used to call differentially accessible regions/peaks
-#Metascape v3.0: Used for GO enrichment analysis
+- bismark v0.16.1: Used to align WGBS reads to the genome and call CpG methylation
+- bwa v0.7.15: bwa-mem used to align ATAC-seq reads to the genome
+- macs2 v2.1.1: Used to call peaks for ATAC-seq
+- STAR v2.5.1b: Used to align RNA-sequencing data
+- stringtie v1.3.3: Used to annotate aligned reads and quantify transcripts. 
+- picard v2.8.1: Used to mark and remove duplicate reads
+- bedtools v2.27.1: closest, intersect, shuffle command used as specified in manuscript 
+- meme v5.0.3: Used AME command to find motif enrichment and FIMO command to scan for motif presence 
+- R v3.3.0: Used to analyze sequencing library results
+- DSS v2.14.0 :Used to call differentially methylated regions
+- DESeq2 v1.12.4: Used to call differentially expressed genes
+- DiffBind v 2.2.12: Used to call differentially accessible regions/peaks
+- Metascape v3.0: Used for GO enrichment analysis
 
 
 ### Example used for Analysis
