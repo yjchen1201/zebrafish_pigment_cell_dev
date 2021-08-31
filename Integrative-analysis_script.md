@@ -19,7 +19,7 @@
 ```{R}
 ###################################### {R script} ######################################
 
-####################### COMBINING WGBS METHYLATION DATA (d30) AND ATAC SEQ DATA (IDR DARs) #######################
+######## COMBINING WGBS METHYLATION DATA (d30) AND ATAC SEQ DATA (IDR DARs) ###########
 #Compare DMR size vs DAR size
 combined_DMR <- read.table("Combined_DMRs_d30_p0.01_wINFO.bed",sep = "\t", header = F,quote = "", stringsAsFactors = F)
 combined_DAR <- read.table("All_DiffBind_peaks_merged_wINFO.bed",sep = "\t", header = F,quote = "", stringsAsFactors = F)
@@ -1339,11 +1339,11 @@ ht3
 
 
 ############## Promoter centric Analysis (got danRer10 promoter (1kb upstream TSS) from UCSC Table browser) #################
-
+############ {Bash script} ################
 #pull out gene info from GTF file
 awk '($3=="gene"){OFS="\t"; if ($7~/+/){print $1,$4-1000,$4+500,$10}; if ($7~/-/){print $1,$5-500,$5+1000,$10}}' /bar/genomes/danRer10/Ensembl/Danio_rerio.GRCz10.85.gtf| sed 's/[";]//g;' > /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/Danio_rerio.GRCz10.85.GENE.PROMOTER.bed
 awk '($3=="gene"){OFS="\t"; if ($7~/+/){print $1,$4,$5,$10}; if ($7~/-/){print $1,$4,$5,$10}}' /bar/genomes/danRer10/Ensembl/Danio_rerio.GRCz10.85.gtf| sed 's/[";]//g;' > /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/Danio_rerio.GRCz10.85.GENE.LOCATION.bed
-
+############ {R script} ###################
 prom <- read.table("Combined_analysis/promoter_centric/Danio_rerio.GRCz10.85.GENE.PROMOTER.bed", sep = "\t", stringsAsFactors =F, header = F, quote ="")
 prom[prom$V2 <0,]$V2 <- 0
 prom$chrompos <- paste(prom$V1,":",prom$V2,"-",prom$V3,sep = "")
@@ -1351,11 +1351,13 @@ prom$chrompos <- paste(prom$V1,":",prom$V2,"-",prom$V3,sep = "")
 write.table(prom,"Combined_analysis/promoter_centric/Danio_rerio.GRCz10.85.GENE.PROMOTER.bed", sep = "\t",quote = F, col.names = F, row.names = F)
 
 #overlap CpG methylation
+############ {Bash script} ################
 bedtools intersect -wo -a /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/Danio_rerio.GRCz10.85.GENE.PROMOTER.bed -b /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/BS_only/15somite_NCC_Combined_DSS.bed > /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/ENSEMBL_danRer10_gene_UNIQUE_promoters_1kb_upstream_wMETH_15s.txt
 bedtools intersect -wo -a /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/Danio_rerio.GRCz10.85.GENE.PROMOTER.bed -b /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/BS_only/24hpf_NCC_Combined_DSS.bed > /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/ENSEMBL_danRer10_gene_UNIQUE_promoters_1kb_upstream_wMETH_24s.txt
 bedtools intersect -wo -a /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/Danio_rerio.GRCz10.85.GENE.PROMOTER.bed -b /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/BS_only/Mel_Combined_DSS.bed > /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/ENSEMBL_danRer10_gene_UNIQUE_promoters_1kb_upstream_wMETH_Mel.txt
 bedtools intersect -wo -a /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/Danio_rerio.GRCz10.85.GENE.PROMOTER.bed -b /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/BS_only/Iri_Combined_DSS.bed > /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/ENSEMBL_danRer10_gene_UNIQUE_promoters_1kb_upstream_wMETH_Iri.txt
 
+############ {R script} ################
 prom_meth15<- read.table("ENSEMBL_danRer10_gene_UNIQUE_promoters_1kb_upstream_wMETH_15s.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
 prom_meth24<- read.table("ENSEMBL_danRer10_gene_UNIQUE_promoters_1kb_upstream_wMETH_24s.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
 prom_methM<- read.table("ENSEMBL_danRer10_gene_UNIQUE_promoters_1kb_upstream_wMETH_Mel.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
@@ -1378,14 +1380,16 @@ prom_methM_aggregate <- ddply(prom_methM,.(V1,V2,V3,V4,V5),summarise,CpGcount=su
 prom_methI_aggregate <- ddply(prom_methI,.(V1,V2,V3,V4,V5),summarise,CpGcount=sum(V11),AveMeth=mean(meth))
 
 m<-Reduce(function(x, y) merge(x, y, by=c("V1","V2","V3"), all.x = T), list(prom,prom_meth15_aggregate[,c(1,2,3,6,7)],prom_meth24_aggregate[,c(1,2,3,6,7)],prom_methM_aggregate[,c(1,2,3,6,7)],prom_methI_aggregate[,c(1,2,3,6,7)]))
-
+```
+```{bash}
 ###################################### {Bash script} ######################################
 #overlap IDR peaks
 bedtools intersect -c -a /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/Danio_rerio.GRCz10.85.GENE.PROMOTER.bed -b /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/ATAC_only/IDR_peaks_0.05/15somite_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/ENSEMBL_danRer10_gene_UNIQUE_promoters_1kb_upstream_wIDRpeaks15s.bed
 bedtools intersect -c -a /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/Danio_rerio.GRCz10.85.GENE.PROMOTER.bed -b /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/ATAC_only/IDR_peaks_0.05/24hpf_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/ENSEMBL_danRer10_gene_UNIQUE_promoters_1kb_upstream_wIDRpeaks24s.bed
 bedtools intersect -c -a /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/Danio_rerio.GRCz10.85.GENE.PROMOTER.bed -b /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/ATAC_only/IDR_peaks_0.05/Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/ENSEMBL_danRer10_gene_UNIQUE_promoters_1kb_upstream_wIDRpeaksMel.bed
 bedtools intersect -c -a /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/Danio_rerio.GRCz10.85.GENE.PROMOTER.bed -b /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/ATAC_only/IDR_peaks_0.05/Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/promoter_centric/ENSEMBL_danRer10_gene_UNIQUE_promoters_1kb_upstream_wIDRpeaksIri.bed
-
+```
+```{R}
 ###################################### {R script} ######################################
 prom_IDR15<- read.table("ENSEMBL_danRer10_gene_UNIQUE_promoters_1kb_upstream_wIDRpeaks15s.bed",sep = "\t", header = F,quote = "", stringsAsFactors = F)
 prom_IDR24<- read.table("ENSEMBL_danRer10_gene_UNIQUE_promoters_1kb_upstream_wIDRpeaks24s.bed",sep = "\t", header = F,quote = "", stringsAsFactors = F)
@@ -1400,9 +1404,10 @@ m_IDR[is.na(m_IDR)]<-0
 write.table(m_IDR, "Danio_rerio.GRCz10.85.GENE.PROMOTER_wMETHinfo_wIDRinfo.bed", sep = "\t", quote =F, col.names =T, row.names = F)
 write.table(m_IDR, "Danio_rerio.GRCz10.85.GENE.PROMOTER_wMETHinfo_wIDRinfo2.bed", sep = "\t", quote =F, col.names =F, row.names = F)
 
-
+############ {Bash script} ################
 bedtools intersect -wao -a Danio_rerio.GRCz10.85.GENE.PROMOTER_wMETHinfo_wIDRinfo2.bed -b /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/All_DMAR_Combined_wINFO.annotated2.bed > Danio_rerio.GRCz10.85.GENE.PROMOTER_wMETHinfo_wIDRinfo_wDMAR_wAnnotation.bed
 
+############ {R script} ################
 prom_DMAR <- read.table("Danio_rerio.GRCz10.85.GENE.PROMOTER_wMETHinfo_wIDRinfo_wDMAR_wAnnotation.bed",sep = "\t", header = F,quote = "", stringsAsFactors = F)
 names(prom_DMAR) <- c("chr","start","end","gene","chrompos","s15_CpGcount","s15_AveMeth","s24_CpGcount","s24_AveMeth","Mel_CpGcount","Mel_AveMeth","Iri_CpGcount","Iri_AveMeth","s15_IDRpeak","s24_IDRpeak","Mel_IDRpeak","Iri_IDRpeak", "chr_DMAR","start_DMAR" , "end_DMAR"  ,    "chrompos_DMAR",  "DMARsize", "DMRsize" , "DMRs15vs24" , "DMRs24vMel", "DMRs24vIri",  "DMRMelvIri" ,"DARsize" ,   "DARs15vs24",  "DARs24vMel",
 "DARs24vIri","DARMelvIri", "IDR_s15" ,"IDR_s24"  , "IDR_M"  , "IDR_I" ,    "Meth_s15"   ,"Meth_s24" , "Meth_Mel" , "Meth_Iri"   , "CpG_s15",  "CpG_s24",  "CpG_Mel" ,"CpG_Iri", "aveCpG"   , "CpGdensity100bp","Annotation", "Annotation2","prom_DMAR_overlap")
@@ -1486,7 +1491,6 @@ names(vals) <- val_names
 bb<-waffle::waffle(vals,colors = mypalette1,rows = 18,size = 0.5,title = "Iri DEG's promoter dynamics (On)")
 
 
-
 #Mel off
 prom_DMAR2_Mel_Off_nochange <- prom_DMAR2_Mel_Off[prom_DMAR2_Mel_Off$DMRs24vMel == 0 & prom_DMAR2_Mel_Off$DARs24vMel ==0,]
 prom_DMAR2_Mel_Off_only_hypo<- prom_DMAR2_Mel_Off[prom_DMAR2_Mel_Off$DMRs24vMel > 0 & prom_DMAR2_Mel_Off$DARs24vMel ==0,]
@@ -1541,7 +1545,6 @@ dd<-waffle::waffle(vals,colors = mypalette1,rows =18,size = 0.5,title = "Iri DEG
 multiplot(aa,bb,cc,dd,cols=1)
 
 
-
 ############# Check conservation across DMRS, DMARs and DARs using deeptools #####################
 Iri_DMR_all <- DMAR[DMAR$DMRs24vIri !=0,]
 Mel_DMR_all <- DMAR[DMAR$DMRs24vMel !=0,]
@@ -1561,7 +1564,7 @@ write.table(Mel_DMAR_all[,c(1,2,3)],"Mel_DMAR_all.bed",sep = "\t", col.names = F
 bedtools shuffle -i Iri_DAR_all.bed -g /bar/genomes/danRer10/conservation/danRer10.chrom.sizes > Iri_shuffled_genome.bed ##for control in plotting
 bedtools shuffle -i Mel_DAR_all.bed -g /bar/genomes/danRer10/conservation/danRer10.chrom.sizes > Mel_shuffled_genome.bed ##for control in plotting
 
-
+############ {Bash script} #############
 # Download these files:
 ##danRer10.vertebrate.phastCons8way.bw 
 ##danRer10.vertebrate.phyloP8way.bw 
@@ -1580,11 +1583,9 @@ plotHeatmap -m Iri_phyloP_matrix.gz -out Iri_phyloP_heatmap_only.png -T "Iridoph
 
 computeMatrix reference-point -p 20 -S danRer10.vertebrate.phyloP8way.bw -R Mel_DMR_all.bed Mel_DAR_all.bed Mel_DMAR_all.bed Mel_shuffled_genome.bed --missingDataAsZero --referencePoint center -a 5000 -b 5000 -o Mel_phyloP_matrix.gz --outFileNameMatrix Mel_phyloP_matrix.tab --outFileSortedRegions Mel_phyloP_matrix.bed
 plotHeatmap -m Mel_phyloP_matrix.gz -out Mel_phyloP_heatmap_only.png -T "Melanophore-specific region phyloP" --missingDataColor 0.8 --heatmapWidth 12 --refPointLabel "Center" --heatmapHeight 20
-
-
-
-
-
+```
+```{R}
+############ {R script} #############
 ####### Make WashU browser bed tracks for DMR,DAR,DMAR ###########
 DMAR_new<-read.table("All_DMAR_Combined_wINFO.annotated.bed",sep = '\t', header = T, quote = "", stringsAsFactors = F)
 DMAR_new$Type <- "None"
@@ -1963,9 +1964,6 @@ b <-ggplot(df_mel[df_mel$DMAR != ".",], aes(x=Type,y=as.numeric(DMAR)))+ geom_vi
 b
 
 
-
-
-
 #Pull out DMARs of each GO term and run homer enrichment
 write.table(Iri_DEG_50kb_DMAR_FIMO_Small_mlc[,c(6:8)],"Iri_DEG_50kb_DMAR_FIMO_Small_mlc_forHomer.bed", sep = '\t', col.names = F, row.names = F, quote = F)
 write.table(Iri_DEG_50kb_DMAR_FIMO_nitrogen[,c(6:8)],"Iri_DEG_50kb_DMAR_FIMO_nitrogen_forHomer.bed", sep = '\t', col.names = F, row.names = F, quote = F)
@@ -2331,16 +2329,15 @@ ht4=  Heatmap(df.OG2,name= "RPKM",col = colorRamp2(c(0,50,200,300,400), c("#bae1
 ht4
 
 ht2+ht+ht1+ht3+ht4
+```
 
 
 
 
-
-
-
-
+``` {bash}
 
 ############# Centrimo motif TF footprinting ##############
+################## {Bash script} ##################
 #!/bin/bash
 # Author: Hyung Joo Lee
 
@@ -2479,11 +2476,11 @@ rm ${motif}/${motif}_sites_centipedeX_ATAC_Iri.for.txt ${motif}/${motif}_sites_c
 
 
 ht2+ht+ht1+ht3+ht4
+```
 
-
-
-
+```{R」
 ################# DMR, DAR and DMAR correlate with gene expression #####################
+################## {R script} ##################
 DMAR <- read.table("All_DMAR_Combined_wINFO_NEW_042620.bed",sep = "\t",header =T, stringsAsFactors =F)
 DEG <- read.table("/scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/RNA_only/DESeq2_051718/DEGs_combined_samples_p0.01.txt",sep = "\t",header =T, stringsAsFactors =F)
 
@@ -2562,6 +2559,7 @@ write.table(openingDMAR_s24vsIri,"openingDMAR_s24vsIri.bed", sep = "\t", col.nam
 write.table(closingDMAR_s24vsIri,"closingDMAR_s24vsIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
 
 
+################## {Bash script} ##################
 bedtools closest -d -a hypoDMR_s15vs24.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs15v24.sorted.bed > hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed
 bedtools closest -d -a hyperDMR_s15vs24.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs15v24.sorted.bed > hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed
 bedtools closest -d -a hypoDMR_s24vsMel.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed > hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed
@@ -2583,7 +2581,7 @@ bedtools closest -d -a closingDMAR_s24vsMel.sorted.bed -b GRCz10.85.GENE.PROMOTE
 bedtools closest -d -a openingDMAR_s24vsIri.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed > openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed
 bedtools closest -d -a closingDMAR_s24vsIri.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed > closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed
 
-
+################## {R script} ##################
 hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24 <- read.table("hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
 hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24 <- read.table("hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
 hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel <- read.table("hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
@@ -2883,7 +2881,7 @@ write.table(closingDMAR_s24vsMel_specific,"closingDMAR_s24vsMel_specific.bed", s
 write.table(openingDMAR_s24vsIri_specific,"openingDMAR_s24vsIri_specific.bed", sep = "\t", col.names = F, row.names =F,quote = F)
 write.table(closingDMAR_s24vsIri_specific,"closingDMAR_s24vsIri_specific.bed", sep = "\t", col.names = F, row.names =F,quote = F)
 
-
+################## {Bash script} ##################
 bedtools closest -d -a hypoDMR_s24vsMel_specific.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed > hypoDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.sorted.bed
 bedtools closest -d -a hyperDMR_s24vsMel_specific.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed >hyperDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.sorted.bed
 bedtools closest -d -a hypoDMR_s24vsIri_specific.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed > hypoDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.sorted.bed
@@ -2900,6 +2898,7 @@ bedtools closest -d -a closingDMAR_s24vsMel_specific.sorted.bed -b GRCz10.85.GEN
 bedtools closest -d -a openingDMAR_s24vsIri_specific.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed > openingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.sorted.bed
 bedtools closest -d -a closingDMAR_s24vsIri_specific.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed >closingDMAR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.sorted.bed
 
+################## {R script} ##################
 hypoDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel <- read.table("hypoDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
 hyperDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel <- read.table("hyperDMR_s24vsMel_specific.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
 hypoDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri <- read.table("hypoDMR_s24vsIri_specific.GENE.PROMOTER.DEGs24vsIri.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
@@ -3026,7 +3025,7 @@ ppppp+facet_grid(.~comp)+geom_hline(yintercept=0,linetype="dashed",color="red")
 
 
 
-### Generate bar plots representing frequency and distribution of iridophore-associated DM/ARs with a particular TF motif ####
+### Generate bar plots representing frequency and distribution of iridophore-associated DM/ARs with a particular TF motif ###
 # ALX1_ALX3_ALX4_GBX2_TFEC_SOX10_MOTIF_occurrence_in_Iri_DMR_DAR_DMAR.pdf
 data <- read.table("MOTIF_occurrence_in_24vsIri_DMAR_table.txt", sep = "\t", header = T, stringsAsFactors=F)
 data<-as.data.frame(data)
@@ -3073,3 +3072,4 @@ p4 <- ggplot(data, aes(x=DMAR, y=pct, fill=DMAR_type,label=pct)) +
 pdf("DMR_DAR_DMAR_occurence.pdf", width = 12, height = 4)
 grid.draw(rbind(ggplotGrob(p3), ggplotGrob(p4), size = "last"))
 dev.off()
+```
