@@ -1,3 +1,4 @@
+### Tool version
 #cutadapt v1.10: Used to trim adapter reads 
 #samtools version 1.3.1: Used to sort and downsample bam files for downstream processing
 #bismark v0.16.1: Used to align WGBS reads to the genome and call CpG methylation
@@ -14,7 +15,9 @@
 #DiffBind v 2.2.12: Used to call differentially accessible regions/peaks
 #Metascape v3.0: Used for GO enrichment analysis
 
- ##################################### WGBS ANALYSIS (Use d30)#########################################
+### Analysis
+```{bash}
+###################################################### {bash script} ######################################################
 ## Example of BS-seq pipeline#
 
 # Adapter trimming
@@ -44,7 +47,8 @@ bismark --quiet <path to lambda genome> -1 "SAMPLE_R1.fastq.gz" -2 "SAMPLE_R2.fa
 
 ###convert bismark coverage output into DSS input file format
 python3 convert_DSS.py Merged_ALLRUNS_Iri_Rep1_trimmed_bismark_resorted.rmdup.bismark.cov
-
+```
+```{R}
 ###################################################### {R analysis} ######################################################
 ##QC individual WGBS Replicates##
 setwd(<WGBS_folder>)
@@ -198,7 +202,6 @@ Iri_combined$N <- Iri_combined$N.x+Iri_combined$N.y
 Iri_combined$X <- Iri_combined$X.x+Iri_combined$X.y
 Iri_combined <-Iri_combined[,c(1,2,9,10)]
 write.table(Iri_combined, "Iri_Combined_DSS.txt",col.names = T,row.names = F, sep = "\t", quote = F)
-
 
 s15pos_combined$M <- round(s15pos_combined$X/s15pos_combined$N, digits = 2)
 s24pos_combined$M <- round(s24pos_combined$X/s24pos_combined$N, digits = 2)
@@ -471,7 +474,6 @@ pMI <-ggplot(MI_DMR, aes(size)) + geom_density(alpha = 0.5,adjust =0.4,color = m
 multiplot(ps24,pI,pM,pMI, cols = 2)
 
 
-
 #Graph Methylation differences and also correlation in shared DMRs
 s24 <-combined_dmr_wInfo[combined_dmr_wInfo$s15vs24 !=0,] 
 M<-combined_dmr_wInfo[combined_dmr_wInfo$s24vMel !=0,]
@@ -492,3 +494,4 @@ pMI <-ggplot(shar, aes(MelvsIri)) + geom_density(alpha = 0.5,adjust =1,color = m
 pMI
 
 multiplot(ps24,pI,pM,pMI, cols = 2)
+```
