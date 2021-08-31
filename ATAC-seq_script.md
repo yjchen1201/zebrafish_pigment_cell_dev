@@ -18,7 +18,7 @@
 
 ### Example used for Analysis
 ```{bash}
-############################ {Bash script} ######################################
+############################################ {Bash script} ##################################################
 # adapter trimming
 cutadapt -a CTGTCTCTTATACACATCTCCGAGCCCACGAGAC -A CTGTCTCTTATACACATCTGACGCTGCCGACGA --minimum-length 25 -o "SAMPLE_R1_trimmed.fastq.gz" -p "SAMPLE_R2_trimmed.fastq.gz" "SAMPLE_R1_fastq.gz" "SAMPLE_R2_fastq.gz"; done
 # Align to danRer10 using bwa mem
@@ -53,7 +53,7 @@ awk -v OFS="\t" '{if ($6=="+") print $1,$2+4,$3+4,$4,$5,$6; else if ($6=="-") pr
 ```
 
 ```{R}
-############################ {R script} ######################################
+############################################ {R script} ##################################################
 # make Genome browser files on just the ends of ATAC reads 
 # import shifted bed file, Iri and Mel samples
 Iri1 <- read.table("Iri_Rep1.downsampled.Tshift.fixed.bed", sep = "\t", header = F, stringsAsFactors = F)
@@ -143,7 +143,7 @@ s24_combined_aggregate$combined <- s24_combined_aggregate$V4.x+s24_combined_aggr
 write.table(s24_combined_aggregate[,c(1,2,3,6)], "24hpf_pos_combined_downsampled.Tshift.fixed.tagmentpositions.bed", sep = "\t", col.names = F, row.names = F, quote = F)
 ```
 ```{bash}
-################################ {Bash script ###################################
+############################################ {Bash script} ##################################################
 #MACS2 call peak on downsampled (35million) files
 macs2 callpeak -t "SAMPLE_Rep1_downsampled.Tshift.fixed.tagmentpositions.bed" -f BED -g 1.4e+9 -n "SAMPLE_Rep1_downsampled.Tshift.fixed.tagmentpositions.p01" -B --verbose 3 --SPMR --keep-dup all --nomodel -s 75 --extsize 73 --shift -37 -p .01 --outdir ../macs2
 
@@ -162,7 +162,7 @@ for i in *peaks.txt; do wc -l $i;done
 ```
 
 ```{R}
-############################################ {R script } ##################################################
+############################################ {R script} ##################################################
 library(reshape)
 library(RColorBrewer)
 library(ggplot2)
@@ -194,7 +194,7 @@ a<-ggplot(d, aes(Size, fill = NCC, colour = NCC)) + geom_density(alpha = 0.5, ad
       labs(x = "Size", y = "Density")+scale_x_continuous(lim = c(0,1000))+scale_fill_manual(values = mypalette)+scale_color_manual(values=mypalette)+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))
 ```
 ``` {bash}
-############################################ {Bash script } ##################################################
+############################################ {Bash script} ##################################################
 # Merge all Peaks into master peak#
 cat Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/ATAC_only/IDR_peaks_0.05/Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/ATAC_only/IDR_peaks_0.05/24hpf_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/ATAC_only/IDR_peaks_0.05/15somite_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > All_IDR_peaks.txt
 # sort based on Choord
@@ -212,7 +212,7 @@ bedtools intersect -c -a All_IDR_peaks_merged.txt -b Iri.downsampled.Tshift.p01_
 ```
 
 ```{R}
-############################################ {R script } ##################################################
+############################################ {R script} ##################################################
 #Then merge the IDR peaks in R
 Mel<- read.table("All_IDR_peaks_merged_Mel.txt",, header = F, sep = "\t", stringsAsFactors = F, quote = "")
 Iri<- read.table("All_IDR_peaks_merged_Iri.txt",, header = F, sep = "\t", stringsAsFactors = F, quote = "")
@@ -279,7 +279,7 @@ ht
 ```
 
 ```{bash}
-############################################ {Bash script } ##################################################v
+############################################ {Bash script} ##################################################v
 #Identify IDR differentially accessible regions(DARs) using bedtools intersect#
 bedtools intersect -v -a Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt -b Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > Mel_only_IDR_peak_MelvsIri.txt
 bedtools intersect -v -b Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt -a Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > Iri_only_IDR_peak_MelvsIri.txt
@@ -296,7 +296,7 @@ bedtools intersect -wo -a 24hpf_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.I
 ```
 
 ```{R}
-############################################ {R script } ##################################################
+############################################ {R script} ##################################################
 ### DiffBIND to call DARs (with IDR peaks and FDR 0.001) ("R analysis")###
 library(DiffBind)
 setwd("DiffBind/DiffBind_IDRpeaks")
@@ -405,7 +405,7 @@ data.block <- dba.report(data,th = 0.001, method=DBA_ALL_METHODS_BLOCK,bDB=TRUE,
 dba.plotVenn(data.block,c(6,4,2),label1="15NCC vs 24NCC",label2="24NCC vs Mel",label3="24NCC vs Iri")
 ```
 ```{bash}
-############################################ {Bash script } ##################################################
+############################################ {Bash script} ##################################################
 #make master diff peak
 cat Diffbind_15v24_ALL_peaks.bed  Diffbind_24vIri_ALL_peaks.bed  Diffbind_24vMel_ALL_peaks.bed  Diffbind_MelvIri_ALL_peaks.bed > All_DiffBind_peaks.txt
 sort -k1,1 -k2,2n All_DiffBind_peaks.txt > All_DiffBind_peaks.sorted.txt
@@ -421,7 +421,7 @@ bedtools intersect -wao -a All_DiffBind_peaks_merged.txt -b Diffbind_MelvIri_ALL
 ```
 
 ```{R}
-############################################ {R script } ##################################################
+############################################ {R script} ##################################################
 s15_s24<- read.table("All_DiffBind_peaks_merged_15v24.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
 s24_M <- read.table("All_DiffBind_peaks_merged_24vMel.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
 s24_I <- read.table("All_DiffBind_peaks_merged_24vIri.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
