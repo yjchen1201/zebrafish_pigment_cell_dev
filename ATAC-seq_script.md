@@ -1,6 +1,6 @@
 ### Tool version
-#cutadapt v1.10: Used to trim adapter reads 
-#samtools version 1.3.1: Used to sort and downsample bam files for downstream processing
+- cutadapt v1.10: Used to trim adapter reads 
+- samtools version 1.3.1: Used to sort and downsample bam files for downstream processing
 #bismark v0.16.1: Used to align WGBS reads to the genome and call CpG methylation
 #bwa v0.7.15: bwa-mem used to align ATAC-seq reads to the genome
 #macs2 v2.1.1: Used to call peaks for ATAC-seq
