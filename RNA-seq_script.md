@@ -36,7 +36,7 @@ python3 All_expressed_genelist_RefSeq.py RNA_15somiteNCC_Rep2.gene.abundance.fil
 ```
 
 ```{R}
-############################################# {R analysis} #############################################
+############################################# {R script} #############################################
 #Merge all gene expression
 library(ggplot2)
 library(RColorBrewer)
@@ -53,7 +53,6 @@ Mel_R2 <- read.table("<path to RNA folder>/stringtie/RNA_Mel_Rep2.gene.abundance
 Iri_R1 <- read.table("<path to RNA folder>/stringtie/RNA_Iri_Rep1.gene.abundance.filteredNM.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
 Iri_R2 <- read.table("<path to RNA folder>/stringtie/RNA_Iri_Rep2.gene.abundance.filteredNM.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
 
-
 geneTPM<-Reduce(function(x, y) merge(x, y,by = "V1",all.x = T), list(s15_R1[,c(1,9)],s15_R2[,c(1,9)], s24_R1[,c(1,9)],s24_R2[,c(1,9)],Mel_R1[,c(1,9)],Mel_R2[,c(1,9)], Iri_R1[,c(1,9)],Iri_R2[,c(1,9)]))
 colnames(geneTPM) <- c("gene","s15_Rep1","s15_Rep2","s24_Rep1","s24_Rep2","Mel_Rep1","Mel_Rep2","Iri_Rep1","Iri_Rep2")
 geneTPM <- geneTPM[!duplicated(geneTPM$gene),]
@@ -61,8 +60,6 @@ geneTPM$s15 <- (geneTPM$s15_Rep1+geneTPM$s15_Rep2)/2
 geneTPM$s24 <- (geneTPM$s24_Rep1+geneTPM$s24_Rep2)/2
 geneTPM$Mel <- (geneTPM$Mel_Rep1+geneTPM$Mel_Rep2)/2
 geneTPM$Iri <- (geneTPM$Iri_Rep1+geneTPM$Iri_Rep2)/2
-
-
 
 
 #Use DESeq2 to find differentially expressed genes in each comparison
@@ -132,11 +129,13 @@ plotMA(res_Mel_Iri, main="Melanophore vs Iridophore", ylim=c(-6,6), alpha = 0.00
 ```
 
 ```{bash}
+############################################# {Bash script} #############################################
 #MAKE master list of DEGs for comparision
 python3 All_DEGs_list.py DEGs_15somite_24hpf_p0.01.txt DEGs_24hpf_Mel_p0.01.txt DEGs_24hpf_Iri_p0.01.txt DEGs_Mel_Iri_p0.01.txt
 ```
 
 ```{R}
+############################################# {R script} #############################################
 setwd("<path to RNA folder>/DESeq2")
 genelist <- read.table("Combined_DEGs_list.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
 s15_s24<- read.table("DEGs_15somite_24hpf_p0.01.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
@@ -216,7 +215,6 @@ DEG2[DEG2$genename %in% homo_cofactorlist$Input.Common.Name,]$type <- "Cofactor"
 DEG2[DEG2$genename %in% homo_CRMlist$Input.Common.Name,]$type <- "ChomatinRemodeler"
 
 write.table(DEG2,"DEGs_combined_samples_p0.01_wTFinfo.txt",col.names = T, row.names = F,quote = F, sep = "\t")
-
 
 #### Identify DEGs for each cell type
 DEG2 <- read.table("DEGs_combined_samples_p0.01_wTFinfo.txt",header = T, ,quote = "", sep = "\t",stringsAsFactors = F)
