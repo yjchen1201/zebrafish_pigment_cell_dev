@@ -1,3 +1,4 @@
+# Tool version
 #cutadapt v1.10: Used to trim adapter reads 
 #samtools version 1.3.1: Used to sort and downsample bam files for downstream processing
 #bismark v0.16.1: Used to align WGBS reads to the genome and call CpG methylation
@@ -13,9 +14,10 @@
 #DESeq2 v1.12.4: Used to call differentially expressed genes
 #DiffBind v 2.2.12: Used to call differentially accessible regions/peaks
 #Metascape v3.0: Used for GO enrichment analysis
+
 ####################################################################     ATAC SEQ         #######################################################################
 ##Example used for Analysis##
-
+```{bash}
 # adapter trimming
 cutadapt -a CTGTCTCTTATACACATCTCCGAGCCCACGAGAC -A CTGTCTCTTATACACATCTGACGCTGCCGACGA --minimum-length 25 -o "SAMPLE_R1_trimmed.fastq.gz" -p "SAMPLE_R2_trimmed.fastq.gz" "SAMPLE_R1_fastq.gz" "SAMPLE_R2_fastq.gz"; done
 # Align to danRer10 using bwa mem
@@ -50,8 +52,9 @@ methylQA density -Q 10 -r -T -E 0 -I 2000 -o "SAMPLE_MAPQ30.sorted.rmdup.downsam
 # shift transposome inserted site
 awk -v OFS="\t" '{if ($6=="+") print $1,$2+4,$3+4,$4,$5,$6; else if ($6=="-") print $1,$2-5,$3-5,$4,$5,$6}' "SAMPLE_MAPQ30.sorted.rmdup.downsampled.extend.bed" > "SAMPLE_MAPQ30.sorted.rmdup.downsampled.Tshift.bed}"
 #NOTE THAT THIS CAN LEAD TO NEGATIVE VALUES FOR READS AT ENDS OF CHROMOSOMES, so make sure the start site is >0
+```
 
-
+```{R}
 ############################ {R analysis} ######################################
 # make Genome browser files on just the ends of ATAC reads 
 # import shifted bed file, Iri and Mel samples
@@ -483,4 +486,4 @@ pI <-ggplot(I_DAR, aes(size)) + geom_density(alpha = 0.5,adjust =0.4,color = myp
 pMI <-ggplot(MI_DAR, aes(size)) + geom_density(alpha = 0.5,adjust =0.4,color = mypalette[10],fill = mypalette[10])+ggtitle(paste("DAR size distribution\n(Melanophore vs Iridophore)"))+theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 16), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
     labs(x = "DAR size", y = "Density")+scale_x_continuous(lim = c(0,2000))+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))+ theme(legend.position="none")
 multiplot(ps24,pI,pM,pMI, cols = 2)
-
+```
