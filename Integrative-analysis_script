@@ -3045,12 +3045,9 @@ ppppp+facet_grid(.~comp)+geom_hline(yintercept=0,linetype="dashed",color="red")
 # ALX1_ALX3_ALX4_GBX2_TFEC_SOX10_MOTIF_occurrence_in_Iri_DMR_DAR_DMAR.pdf
 data <- read.table("MOTIF_occurrence_in_24vsIri_DMAR_table.txt", sep = "\t", header = T, stringsAsFactors=F)
 data<-as.data.frame(data)
-
 data$MOTIF<-as.factor(data$MOTIF)
 data$MOTIF <- factor(data$MOTIF, levels = c("ALX1","ALX3","ALX4","GBX2","TFEC","SOX10"))
-
 data$DMAR_type <- factor(data$DMAR_type, levels = c("solo_closeDAR","solo_openDAR","solo_hyperDMR","solo_hypoDMR","hypo_closing_DMAR","hypo_opening_DMAR"))
-
 
 mypalette <- brewer.pal(n = 12, name = "Paired")
 #mypalette <-c("#740001","#ae0001","#e35d6a","#ffdfba","#ffffba","#baffc9","#bae1ff","#428bca","#d896ff")
@@ -3075,7 +3072,6 @@ dev.off()
 # DMR_DAR_DMAR_occurence.pdf
 data <- read.table("total_DMAR_distribution.txt", sep = "\t", header = T, stringsAsFactors=F)
 data<-as.data.frame(data)
-
 data$DMAR_type <- factor(data$DMAR_type, levels = c("solo_closeDAR","solo_openDAR","solo_hyperDMR","solo_hypoDMR","hypo_closing_DMAR","hypo_opening_DMAR"))
 data$DMAR <-"DMAR"
 p3 <- ggplot(data, aes(x=DMAR, y=DMAR_number, fill=DMAR_type,label=DMAR_number)) +
@@ -3092,4 +3088,3 @@ p4 <- ggplot(data, aes(x=DMAR, y=pct, fill=DMAR_type,label=pct)) +
 pdf("DMR_DAR_DMAR_occurence.pdf", width = 12, height = 4)
 grid.draw(rbind(ggplotGrob(p3), ggplotGrob(p4), size = "last"))
 dev.off()
-
