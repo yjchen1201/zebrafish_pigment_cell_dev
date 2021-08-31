@@ -15,12 +15,9 @@
 - DiffBind v 2.2.12: Used to call differentially accessible regions/peaks
 - Metascape v3.0: Used for GO enrichment analysis
 
-### Analysis example
+### Analysis part
 ```{bash}
-
-#######################################   RNA-seq ANALYSIS  ############################################
 ## Example ##
-
 # Adapter trimming
 cutadapt -a AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC -A AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT --minimum-length 50 -o "SAMPLE_R1_trimmed.fastq.gz" -p "SAMPLE_R2_trimmed.fastq.gz" "SAMPLE_R1.fastq.gz" "SAMPLE_R2.fastq.gz"
 # Alignment using STAR, output is BAM file sorted by coordinate
@@ -36,10 +33,10 @@ stringtie "SAMPLE_sortedByCoord.out.bam" -o "RefSeq.gtf" -A "RefSeq.gene.abundan
 python3 Filter_only_NM.py "SAMPLE_abundance.txt"
 #Make list of all genes expressed in NCC and pigment cells (RefSeq)
 python3 All_expressed_genelist_RefSeq.py RNA_15somiteNCC_Rep2.gene.abundance.filteredNM.txt RNA_15somiteNCC_Rep4.gene.abundance.filteredNM.txt RNA_24hpfNCC_Rep1.gene.abundance.filteredNM.txt RNA_24hpfNCC_Rep2.gene.abundance.filteredNM.txt RNA_Mel_Rep1.gene.abundance.filteredNM.txt RNA_Mel_Rep2.gene.abundance.filteredNM.txt RNA_Iri_Rep2.gene.abundance.filteredNM.txt RNA_Iri_Rep3.gene.abundance.filteredNM.txt 
+```
 
-
-
-############################### {R analysis} ###############################
+```{R}
+############################################# {R analysis} #############################################
 #Merge all gene expression
 library(ggplot2)
 library(RColorBrewer)
@@ -132,12 +129,14 @@ plotMA(res_15pos_24hpf, main="15somite vs 24hpf", ylim=c(-6,6), alpha = 0.001)
 plotMA(res_24hpf_Mel, main="24hpf vs Melanophore", ylim=c(-6,6), alpha = 0.001)
 plotMA(res_24hpf_Iri, main="24hpf vs Iridophore", ylim=c(-6,6), alpha = 0.001)
 plotMA(res_Mel_Iri, main="Melanophore vs Iridophore", ylim=c(-6,6), alpha = 0.001)
+```
 
-
-
+```{bash}
 #MAKE master list of DEGs for comparision
 python3 All_DEGs_list.py DEGs_15somite_24hpf_p0.01.txt DEGs_24hpf_Mel_p0.01.txt DEGs_24hpf_Iri_p0.01.txt DEGs_Mel_Iri_p0.01.txt
+```
 
+```{R}
 setwd("<path to RNA folder>/DESeq2")
 genelist <- read.table("Combined_DEGs_list.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
 s15_s24<- read.table("DEGs_15somite_24hpf_p0.01.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
@@ -485,5 +484,5 @@ All<-rbind(s15spec,P_off,sP_on,P_on,sM_on,M_on,M_off,sI_on,I_on,I_off)
 NCC <- rbind(s15spec,P_off)
 M <- rbind(sP_on,P_on,sM_on,M_on,M_off)
 I<-rbind(sP_on,P_on,sI_on,I_on,I_off)
-
+```
 
