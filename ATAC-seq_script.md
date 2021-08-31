@@ -18,6 +18,7 @@
 
 ### Example used for Analysis
 ```{bash}
+############################ {Bash script} ######################################
 # adapter trimming
 cutadapt -a CTGTCTCTTATACACATCTCCGAGCCCACGAGAC -A CTGTCTCTTATACACATCTGACGCTGCCGACGA --minimum-length 25 -o "SAMPLE_R1_trimmed.fastq.gz" -p "SAMPLE_R2_trimmed.fastq.gz" "SAMPLE_R1_fastq.gz" "SAMPLE_R2_fastq.gz"; done
 # Align to danRer10 using bwa mem
@@ -32,7 +33,6 @@ java -jar $PICARD_HOME/picard.jar MarkDuplicates REMOVE_SEQUENCING_DUPLICATES=Tr
 #Downsample reads to 35million (Example using samtool view -s subsample command)
 samtools view -h -b -s 0.3125 "SAMPLE_MAPQ30.sorted.rmdup.bam" > "SAMPLE.downsampled.bam"
 
-
 #Calculation Reads fraction in peaks (RFIP)#
 for i in *downsampled.bam; do samtools view $i | wc -l ;done
 #35020476 15somite_pos_Rep1.downsampled.bam
@@ -44,8 +44,6 @@ for i in *downsampled.bam; do samtools view $i | wc -l ;done
 #35040232 24hpf_pos_Rep1.downsampled.bam
 #34975335 24hpf_pos_Rep2.downsampled.bam
 
-
-
 # using MethylQA to covert bam to single-end read bed file
 methylQA density -Q 10 -r -T -E 0 -I 2000 -o "SAMPLE_MAPQ30.sorted.rmdup.downsampled" "danRer10_lite.size" "SAMPLE_MAPQ30.sorted.rmdup.downsampled.bam"
 
@@ -55,7 +53,7 @@ awk -v OFS="\t" '{if ($6=="+") print $1,$2+4,$3+4,$4,$5,$6; else if ($6=="-") pr
 ```
 
 ```{R}
-############################ {R analysis} ######################################
+############################ {R script} ######################################
 # make Genome browser files on just the ends of ATAC reads 
 # import shifted bed file, Iri and Mel samples
 Iri1 <- read.table("Iri_Rep1.downsampled.Tshift.fixed.bed", sep = "\t", header = F, stringsAsFactors = F)
@@ -143,9 +141,9 @@ s24_combined_aggregate <- merge(s24_1_aggregate,s24_2_aggregate, by=c("V1","V2",
 s24_combined_aggregate[is.na(s24_combined_aggregate)] <-0
 s24_combined_aggregate$combined <- s24_combined_aggregate$V4.x+s24_combined_aggregate$V4.y 
 write.table(s24_combined_aggregate[,c(1,2,3,6)], "24hpf_pos_combined_downsampled.Tshift.fixed.tagmentpositions.bed", sep = "\t", col.names = F, row.names = F, quote = F)
-
-#############################################################################################################################################################################3
-
+```
+```{bash}
+################################ {Bash script ###################################
 #MACS2 call peak on downsampled (35million) files
 macs2 callpeak -t "SAMPLE_Rep1_downsampled.Tshift.fixed.tagmentpositions.bed" -f BED -g 1.4e+9 -n "SAMPLE_Rep1_downsampled.Tshift.fixed.tagmentpositions.p01" -B --verbose 3 --SPMR --keep-dup all --nomodel -s 75 --extsize 73 --shift -37 -p .01 --outdir ../macs2
 
@@ -161,8 +159,10 @@ for i in *peaks.txt; do wc -l $i;done
 #167412 24hpf_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt
 #114207 Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt
 #103868 Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt
+```
 
-## Use R to quantify peaks ##
+```{R}
+############################################ {R script } ##################################################
 library(reshape)
 library(RColorBrewer)
 library(ggplot2)
@@ -192,7 +192,9 @@ d<-data.frame(c(rep("Mel",nrow(Mel)),rep("Iri",nrow(Iri)),rep("s24",nrow(hpf24))
 colnames(d) <- c("NCC","Size")
 a<-ggplot(d, aes(Size, fill = NCC, colour = NCC)) + geom_density(alpha = 0.5, adjust = 0.5)+ggtitle("test")+theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 16), axis.title=element_text(size=12))+
       labs(x = "Size", y = "Density")+scale_x_continuous(lim = c(0,1000))+scale_fill_manual(values = mypalette)+scale_color_manual(values=mypalette)+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))
-	  
+```
+``` {bash}
+############################################ {Bash script } ##################################################
 # Merge all Peaks into master peak#
 cat Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/ATAC_only/IDR_peaks_0.05/Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/ATAC_only/IDR_peaks_0.05/24hpf_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/ATAC_only/IDR_peaks_0.05/15somite_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > All_IDR_peaks.txt
 # sort based on Choord
@@ -207,7 +209,10 @@ bedtools intersect -c -a All_IDR_peaks_merged.txt -b 15somite_pos.downsampled.Ts
 bedtools intersect -c -a All_IDR_peaks_merged.txt -b 24hpf_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > All_IDR_peaks_merged_24hpf.txt
 bedtools intersect -c -a All_IDR_peaks_merged.txt -b Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > All_IDR_peaks_merged_Mel.txt
 bedtools intersect -c -a All_IDR_peaks_merged.txt -b Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > All_IDR_peaks_merged_Iri.txt
+```
 
+```{R}
+############################################ {R script } ##################################################
 #Then merge the IDR peaks in R
 Mel<- read.table("All_IDR_peaks_merged_Mel.txt",, header = F, sep = "\t", stringsAsFactors = F, quote = "")
 Iri<- read.table("All_IDR_peaks_merged_Iri.txt",, header = F, sep = "\t", stringsAsFactors = F, quote = "")
@@ -261,7 +266,6 @@ write.table(Mel_Iri_shared_dynamce[,c(2,3,4,1)],"Mel_Iri_shared_dynamic_IDRpeaks
 write.table(rbind(s15_Mel_Iri_peaks[,c(2,3,4,1)],Mel_Iri_peaks[,c(2,3,4,1)]),"Mel_Iri_shared_specific_IDRpeaks.bed", sep = "\t", col.names = F, row.names = F, quote = F)
 write.table(rbind(s15_24s_peaks[,c(2,3,4,1)],only24s_peaks[,c(2,3,4,1)]),"24hpf_specific_IDRpeaks.bed", sep = "\t", col.names = F, row.names = F, quote = F)
 
-
 #heatmap#
 name <- allpeaks[,1]
 df.OG <- allpeaks[,c(6:9)]
@@ -272,7 +276,10 @@ library("circlize") ## For color options
 ht = Heatmap(df.OG, col = colorRamp2(c(0, 1, 2,3), c("#f6f6f6", "#74d600","#7bc043","#028900")), 
     cluster_rows = FALSE, cluster_columns = FALSE,show_row_names = FALSE)
 ht
+```
 
+```{bash}
+############################################ {Bash script } ##################################################v
 #Identify IDR differentially accessible regions(DARs) using bedtools intersect#
 bedtools intersect -v -a Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt -b Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > Mel_only_IDR_peak_MelvsIri.txt
 bedtools intersect -v -b Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt -a Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > Iri_only_IDR_peak_MelvsIri.txt
@@ -286,12 +293,10 @@ bedtools intersect -v -b 24hpf_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.ID
 bedtools intersect -wo -a Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt -b Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > Both_IDR_peak_MelvsIri.txt
 bedtools intersect -wo -a 24hpf_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt -b Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > Both_IDR_peak_24hpfvsMel.txt
 bedtools intersect -wo -a 24hpf_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt -b Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt > Both_IDR_peak_24hpfvsIri.txt
+```
 
-
-
-
-
-
+```{R}
+############################################ {R script } ##################################################
 ### DiffBIND to call DARs (with IDR peaks and FDR 0.001) ("R analysis")###
 library(DiffBind)
 setwd("DiffBind/DiffBind_IDRpeaks")
@@ -398,8 +403,9 @@ dba.plotMA(data, contrast =1,th = 0.001,bXY = F)
 
 data.block <- dba.report(data,th = 0.001, method=DBA_ALL_METHODS_BLOCK,bDB=TRUE,bAll=TRUE)
 dba.plotVenn(data.block,c(6,4,2),label1="15NCC vs 24NCC",label2="24NCC vs Mel",label3="24NCC vs Iri")
-
-
+```
+```{bash}
+############################################ {Bash script } ##################################################
 #make master diff peak
 cat Diffbind_15v24_ALL_peaks.bed  Diffbind_24vIri_ALL_peaks.bed  Diffbind_24vMel_ALL_peaks.bed  Diffbind_MelvIri_ALL_peaks.bed > All_DiffBind_peaks.txt
 sort -k1,1 -k2,2n All_DiffBind_peaks.txt > All_DiffBind_peaks.sorted.txt
@@ -412,7 +418,10 @@ bedtools intersect -wao -a All_DiffBind_peaks_merged.txt -b Diffbind_15v24_ALL_p
 bedtools intersect -wao -a All_DiffBind_peaks_merged.txt -b Diffbind_24vMel_ALL_peaks.bed > All_DiffBind_peaks_merged_24vMel.txt
 bedtools intersect -wao -a All_DiffBind_peaks_merged.txt -b Diffbind_24vIri_ALL_peaks.bed > All_DiffBind_peaks_merged_24vIri.txt
 bedtools intersect -wao -a All_DiffBind_peaks_merged.txt -b Diffbind_MelvIri_ALL_peaks.bed > All_DiffBind_peaks_merged_MelvIri.txt
+```
 
+```{R}
+############################################ {R script } ##################################################
 s15_s24<- read.table("All_DiffBind_peaks_merged_15v24.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
 s24_M <- read.table("All_DiffBind_peaks_merged_24vMel.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
 s24_I <- read.table("All_DiffBind_peaks_merged_24vIri.txt",sep = "\t", header = F,quote = "", stringsAsFactors = F)
