@@ -1,4 +1,4 @@
-# Tool version
+### Tool version
 #cutadapt v1.10: Used to trim adapter reads 
 #samtools version 1.3.1: Used to sort and downsample bam files for downstream processing
 #bismark v0.16.1: Used to align WGBS reads to the genome and call CpG methylation
@@ -15,8 +15,8 @@
 #DiffBind v 2.2.12: Used to call differentially accessible regions/peaks
 #Metascape v3.0: Used for GO enrichment analysis
 
-####################################################################     ATAC SEQ         #######################################################################
-##Example used for Analysis##
+
+### Example used for Analysis
 ```{bash}
 # adapter trimming
 cutadapt -a CTGTCTCTTATACACATCTCCGAGCCCACGAGAC -A CTGTCTCTTATACACATCTGACGCTGCCGACGA --minimum-length 25 -o "SAMPLE_R1_trimmed.fastq.gz" -p "SAMPLE_R2_trimmed.fastq.gz" "SAMPLE_R1_fastq.gz" "SAMPLE_R2_fastq.gz"; done
