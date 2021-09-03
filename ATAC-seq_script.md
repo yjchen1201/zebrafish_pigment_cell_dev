@@ -9,7 +9,7 @@
 - picard v2.8.1: Used to mark and remove duplicate reads
 - bedtools v2.27.1: closest, intersect, shuffle command used as specified in manuscript 
 - meme v5.0.3: Used AME command to find motif enrichment and FIMO command to scan for motif presence 
-- R v3.3.0: Used to analyze sequencing library results
+- R v3.4.0: Used to analyze sequencing library results
 - DSS v2.14.0 :Used to call differentially methylated regions
 - DESeq2 v1.12.4: Used to call differentially expressed genes
 - DiffBind v 2.2.12: Used to call differentially accessible regions/peaks
