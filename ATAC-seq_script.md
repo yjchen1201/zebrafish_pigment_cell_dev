@@ -168,10 +168,10 @@ library(RColorBrewer)
 library(ggplot2)
 mypalette <- c(brewer.pal(6,"Pastel1"),brewer.pal(6,"Pastel2"))
 setwd("IDR_peaks_0.05")
-Mel<- read.table("IDR_peaks_0.05/Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt",, header = F, sep = "\t", stringsAsFactors = F, quote = "")
-Iri<- read.table("IDR_peaks_0.05/Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt",, header = F, sep = "\t", stringsAsFactors = F, quote = "")
-hpf24<- read.table("IDR_peaks_0.05/24hpf_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt",, header = F, sep = "\t", stringsAsFactors = F, quote = "")
-s15<- read.table("IDR_peaks_0.05/15somite_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt",, header = F, sep = "\t", stringsAsFactors = F, quote = "")
+Mel<- read.table("IDR_peaks_0.05/Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt", header = F, sep = "\t", stringsAsFactors = F, quote = "")
+Iri<- read.table("IDR_peaks_0.05/Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt", header = F, sep = "\t", stringsAsFactors = F, quote = "")
+hpf24<- read.table("IDR_peaks_0.05/24hpf_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt", header = F, sep = "\t", stringsAsFactors = F, quote = "")
+s15<- read.table("IDR_peaks_0.05/15somite_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt", header = F, sep = "\t", stringsAsFactors = F, quote = "")
 
 Mel$size <- Mel$V3-Mel$V2
 Iri$size <- Iri$V3-Iri$V2
