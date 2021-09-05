@@ -1,0 +1,9 @@
+,SampleID,Tissue,Factor,Condition,Treatment,Replicate,bamReads,ControlID,bamControl,Peaks,PeakCaller
+1,Mel1,Mel,ER,Resistant,Full-Media,1,Mel_Rep1.downsampled.bam,,,Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt,bed
+2,Mel2,Mel,ER,Resistant,Full-Media,2,Mel_Rep4.downsampled.bam,,,Mel.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt,bed
+3,Iri1,Iri,ER,Responsive,Full-Media,1,Iri_Rep1.downsampled.bam,,,Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt,bed
+4,Iri2,Iri,ER,Responsive,Full-Media,2,Iri_Rep2.downsampled.bam,,,Iri.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt,bed
+5,s24-1,s24,ER,Responsive,Full-Media,1,24hpf_pos_Rep1.downsampled.bam,,,24hpf_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt,bed
+6,s24-2,s24,ER,Responsive,Full-Media,2,24hpf_pos_Rep2.downsampled.bam,,,24hpf_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt,bed
+7,s15-1,s15,ER,Responsive,Full-Media,1,15somite_pos_Rep1.downsampled.bam,,,15somite_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt,bed
+8,s15-2,s15,ER,Resistant,Full-Media,2,15somite_pos_Rep2.downsampled.bam,,,15somite_pos.downsampled.Tshift.p01_peaks.narrowPeak.gz.IDR_peaks.txt,bed
