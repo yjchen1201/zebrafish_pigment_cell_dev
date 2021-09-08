@@ -50,7 +50,7 @@ Mel_openDMAR_AME_genename <- merge(masterTF_orth_list, Mel_openDMAR_AME, by = "m
 Shared_openDMAR_AME_genename <- merge(masterTF_orth_list, Mel_Iri_shared_openDMAR_AME, by = "motif_alt_ID")
 
 #Import DEG information 
-DEG2_Z <- read.table("DEG_FPKM_Zscore_p0.01_RPKMfilter5.txt",header = T, sep = "\t",stringsAsFactors =F)
+DEG2_Z <- read.table("DEG_TPM_Zscore_p0.01_TPMfilter5.txt",header = T, sep = "\t",stringsAsFactors =F) 
 
 # Merge DEG information with pigment specific/shared DM/ARs enriched motifs 
 Iri_hypoDMR_AME_genename_DEG <- merge(Iri_hypoDMR_AME_genename,DEG2_Z, by = "gene")
@@ -136,8 +136,6 @@ df.OG <- Iri_AME_masterlist_withLogP[order(Iri_AME_masterlist_withLogP[,"DBD"],I
 row.names(df.OG) <- name
 #kclus <- kmeans(df.OG,10)
 #split <-  kclus$cluster
-#ht =Heatmap(df.OG, column_title = "TFs",name= "RPKM",col = colorRamp2(c(0,1,5,10,50), c("#e7eff4", "#c3f7dd","#c1fa9e","#fcda79","#ff526a")), 
-#    cluster_rows = F, cluster_columns = FALSE,show_row_names = FALSE,split = split)
 ht = Heatmap(df.OG, column_title = "TFs",name= "TPM",col = colorRamp2(c(0,20,40,60,80), c("#bae1ff","#ffffba","#ffb3ba","#e0301e","#800000")), 
     cluster_rows = F, cluster_columns = FALSE,show_row_names = F)
 ht
@@ -146,8 +144,6 @@ df.OG <- Iri_AME_masterlist_withLogP[order(Iri_AME_masterlist_withLogP[,"DBD"],I
 row.names(df.OG) <- name
 #kclus <- kmeans(df.OG,10)
 #split <-  kclus$cluster
-#ht =Heatmap(df.OG, column_title = "TFs",name= "RPKM",col = colorRamp2(c(0,1,5,10,50), c("#e7eff4", "#c3f7dd","#c1fa9e","#fcda79","#ff526a")), 
-#    cluster_rows = F, cluster_columns = FALSE,show_row_names = FALSE,split = split)
 ht3 = Heatmap(df.OG, column_title = "TFs",name= "-log pval",col = colorRamp2(c(0,10,200,300,400), c("#ffffff","#f1ebe1","#c0cfb2","#8ba888","#44624a")), 
     cluster_rows = F, cluster_columns = FALSE,show_row_names = F)
 ht3 #12 x 3
