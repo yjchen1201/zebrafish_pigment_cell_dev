@@ -352,4 +352,294 @@ write.table(soloIri_openDAR[,c(1:3)],"soloIri_openDAR_location.bed", sep = "\t",
 write.table(soloIri_closeDAR[,c(1:3)],"soloIri_closeDAR_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
 write.table(soloMel_openDAR[,c(1:3)],"soloMel_openDAR_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
 write.table(soloMel_closeDAR[,c(1:3)],"soloMel_closeDAR_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
-                        
+                 
+                           
+## DMR, DAR and DMAR correlate with gene expression [Figure 2e]] 
+# Import gene expression files generated from "RNA/RNA_01_preprocessing.sh"
+s15_R1 <- read.table("RNA_15somiteNCC_Rep1.gene.abundance.filteredNM.txt ",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
+s15_R2 <- read.table("RNA_15somiteNCC_Rep2.gene.abundance.filteredNM.txt",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
+s24_R1 <- read.table("RNA_24hpfNCC_Rep1.gene.abundance.filteredNM.txt ",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
+s24_R2 <- read.table("RNA_24hpfNCC_Rep2.gene.abundance.filteredNM.txt ",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
+Mel_R1 <- read.table("RNA_Mel_Rep1.gene.abundance.filteredNM.txt ",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
+Mel_R2 <- read.table("RNA_Mel_Rep2.gene.abundance.filteredNM.txt ",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
+Iri_R2 <- read.table("RNA_Iri_Rep1.gene.abundance.filteredNM.txt ",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
+Iri_R1 <- read.table("RNA_Iri_Rep2.gene.abundance.filteredNM.txt ",,sep = "\t", header = F,quote = "", stringsAsFactors = F)
+
+# Merge all the list
+geneFPKM<-Reduce(function(x, y) merge(x, y,by = "V5",all.x = T), list(s15_R1[,c(5,8)],s15_R2[,c(5,8)], s24_R1[,c(5,8)],s24_R2[,c(5,8)],Mel_R1[,c(5,8)],Mel_R2[,c(5,8)], Iri_R1[,c(5,8)],Iri_R2[,c(5,8)]))
+colnames(geneFPKM) <- c("gene","s15_Rep1","s15_Rep2","s24_Rep1","s24_Rep2","Mel_Rep1","Mel_Rep2","Iri_Rep1","Iri_Rep2")
+geneFPKM <- geneFPKM[!duplicated(geneFPKM$gene),]
+#Calculate average between two replicates
+geneFPKM$s15 <- (geneFPKM$s15_Rep1+geneFPKM$s15_Rep2)/2
+geneFPKM$s24 <- (geneFPKM$s24_Rep1+geneFPKM$s24_Rep2)/2
+geneFPKM$Mel <- (geneFPKM$Mel_Rep1+geneFPKM$Mel_Rep2)/2
+geneFPKM$Iri <- (geneFPKM$Iri_Rep1+geneFPKM$Iri_Rep2)/2
+
+# Import DEGs info from DEGs_combined_samples_p0.01.txt generated using "RNA/RNA_02_DEGanalysis.r"
+DEG <- read.table("DEGs_combined_samples_p0.01.txt",sep = "\t",header =T, stringsAsFactors =F)
+# Merge DEG information in
+DEG_TPM <- merge(DEG,geneFPKM,by="gene")
+# Filter DEGs with TPM>5
+DEG_TPM <- DEG_TPM[DEG_TPM$s15 >5 | DEG_TPM$s24 >5 | DEG_TPM$Mel >5 | DEG_TPM$Iri >5,]
+DEG_TPM<-DEG_TPM[complete.cases(DEG_TPM),]
+
+# Extract each DM/AR information out
+hypoDMR_s15vs24 <- DMAR[DMAR$DMRs15vs24 >0,]
+hyperDMR_s15vs24 <- DMAR[DMAR$DMRs15vs24 <0,]
+hypoDMR_s24vsMel <- DMAR[DMAR$DMRs24vMel >0,]
+hyperDMR_s24vsMel <- DMAR[DMAR$DMRs24vMel <0,]
+hypoDMR_s24vsIri <- DMAR[DMAR$DMRs24vIri >0,]
+hyperDMR_s24vsIri <- DMAR[DMAR$DMRs24vIri <0,]
+
+openingDAR_s15vs24 <- DMAR[DMAR$DARs15vs24 >0,]
+closingDAR_s15vs24 <- DMAR[DMAR$DARs15vs24 <0,]
+openingDAR_s24vsMel <- DMAR[DMAR$DARs24vMel >0,]
+closingDAR_s24vsMel <- DMAR[DMAR$DARs24vMel <0,]
+openingDAR_s24vsIri <- DMAR[DMAR$DARs24vIri >0,]
+closingDAR_s24vsIri <- DMAR[DMAR$DARs24vIri <0,]
+openingDAR_s24vsMI <- DMAR[DMAR$DARs24vMel >0 & DMAR$DARs24vIri >0,]
+closingDAR_s24vsMI <- DMAR[DMAR$DARs24vMel <0 & DMAR$DARs24vIri <0,]
+openingDAR_s24vsMel_specific <- DMAR[DMAR$DARs24vMel >0 & DMAR$DARs24vIri <=0,]
+closingDAR_s24vsMel_specific <- DMAR[DMAR$DARs24vMel <0 & DMAR$DARs24vIri >=0,]
+openingDAR_s24vsIri_specific <- DMAR[DMAR$DARs24vIri >0 & DMAR$DARs24vMel <=0,]
+closingDAR_s24vsIri_specific <- DMAR[DMAR$DARs24vIri <0 & DMAR$DARs24vMel >=0,]
+
+openingDMAR_s15vs24 <- DMAR[DMAR$DMRs15vs24 >0 & DMAR$DARs15vs24 >0,]
+closingDMAR_s15vs24 <- DMAR[DMAR$DMRs15vs24 <0 & DMAR$DARs15vs24 <0,]
+openingDMAR_s24vsMel <- DMAR[DMAR$DMRs24vMel >0 & DMAR$DARs24vMel >0,]# hypo opening
+closingDMAR_s24vsMel <- DMAR[DMAR$DMRs24vMel >0 & DMAR$DARs24vMel <0,]# hypo closing
+openingDMAR_s24vsIri <- DMAR[DMAR$DMRs24vIri >0 & DMAR$DARs24vIri >0,]# hypo opening
+closingDMAR_s24vsIri <- DMAR[DMAR$DMRs24vIri >0 & DMAR$DARs24vIri <0,]# hypo closing
+
+openingDMAR_s24vsMI <- DMAR[DMAR$DMRs24vMel >0 & DMAR$DARs24vMel >0 & DMAR$DMRs24vIri >0 & DMAR$DARs24vIri >0,]# hypo opening
+closingDMAR_s24vsMI <- DMAR[DMAR$DMRs24vMel >0 & DMAR$DARs24vMel <0 & DMAR$DMRs24vIri <0 & DMAR$DARs24vIri <0,]# hypo closing
+openingDMAR_s24vsMel_specific <- openingDMAR_s24vsMel[!(openingDMAR_s24vsMel$chrompos %in% openingDMAR_s24vsIri$chrompos),]# hypo opening
+closingDMAR_s24vsMel_specific <- closingDMAR_s24vsMel[!(closingDMAR_s24vsMel$chrompos %in% closingDMAR_s24vsIri$chrompos),]# hypo closing
+openingDMAR_s24vsIri_specific <- openingDMAR_s24vsIri[!(openingDMAR_s24vsIri$chrompos %in% openingDMAR_s24vsMel$chrompos),]# hypo opening
+closingDMAR_s24vsIri_specific <- closingDMAR_s24vsIri[!(closingDMAR_s24vsIri$chrompos %in% closingDMAR_s24vsMel$chrompos),]# hypo closing
+
+# Save bed files
+write.table(hypoDMR_s15vs24,"hypoDMR_s15vs24.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(hyperDMR_s15vs24,"hyperDMR_s15vs24.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(hypoDMR_s24vsMel,"hypoDMR_s24vsMel.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(hyperDMR_s24vsMel,"hyperDMR_s24vsMel.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(hypoDMR_s24vsIri,"hypoDMR_s24vsIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(hyperDMR_s24vsIri,"hyperDMR_s24vsIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+
+write.table(openingDAR_s15vs24,"openingDAR_s15vs24.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(closingDAR_s15vs24,"closingDAR_s15vs24.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(openingDAR_s24vsMel,"openingDAR_s24vsMel.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(closingDAR_s24vsMel,"closingDAR_s24vsMel.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(openingDAR_s24vsIri,"openingDAR_s24vsIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(closingDAR_s24vsIri,"closingDAR_s24vsIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+
+write.table(openingDMAR_s15vs24,"openingDMAR_s15vs24.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(closingDMAR_s15vs24,"closingDMAR_s15vs24.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(openingDMAR_s24vsMel,"openingDMAR_s24vsMel.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(closingDMAR_s24vsMel,"closingDMAR_s24vsMel.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(openingDMAR_s24vsIri,"openingDMAR_s24vsIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(closingDMAR_s24vsIri,"closingDMAR_s24vsIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+
+
+# Extract gene promoter information from Ensembl gtf file. (version GRCz10.85)
+## {bash code} ##
+awk '($3=="gene"){OFS="\t"; if ($7~/+/){print $1,$4-1000,$4+500,$10}; if ($7~/-/){print $1,$5-500,$5+1000,$10}}' Danio_rerio.GRCz10.85.gtf| sed 's/[";]//g;' > Danio_rerio.GRCz10.85.GENE.PROMOTER.bed
+##################
+
+# Import promoter information
+Gene.Prom <- read.table("Danio_rerio.GRCz10.85.GENE.PROMOTER.bed", sep = "\t", header =F, stringsAsFactors =F)
+# Extract promoter information for DEGs
+Gene.Prom.DEG15v24 <- Gene.Prom[Gene.Prom$V4 %in% DEG_TPM[DEG_TPM$s15v24hpf_log2_change != 0,]$gene,]
+Gene.Prom.DEG24vMel <- Gene.Prom[Gene.Prom$V4 %in% DEG_TPM[DEG_TPM$s24vMel_log2_change != 0,]$gene,]
+Gene.Prom.DEG24vIri <- Gene.Prom[Gene.Prom$V4 %in% DEG_TPM[DEG_TPM$s24vIri_log2_change != 0,]$gene,]
+
+#Save DEG promoter bed files
+write.table(Gene.Prom.DEG15v24,"GRCz10.85.GENE.PROMOTER.DEGs15v24.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(Gene.Prom.DEG24vMel,"GRCz10.85.GENE.PROMOTER.DEGs24vMel.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(Gene.Prom.DEG24vIri,"GRCz10.85.GENE.PROMOTER.DEGs24vIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+
+
+# Find DM/AR closest DEGs using bedtools
+## load bedtools first, then run bash code in R using system
+system("bedtools closest -d -a hypoDMR_s15vs24.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs15v24.sorted.bed > hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed")
+system("bedtools closest -d -a hyperDMR_s15vs24.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs15v24.sorted.bed > hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed")
+system("bedtools closest -d -a hypoDMR_s24vsMel.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed > hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed")
+system("bedtools closest -d -a hyperDMR_s24vsMel.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed > hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed")
+system("bedtools closest -d -a hypoDMR_s24vsIri.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed > hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed")
+system("bedtools closest -d -a hyperDMR_s24vsIri.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed > hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed")
+
+system("bedtools closest -d -a openingDAR_s15vs24.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs15v24.sorted.bed > openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed")
+system("bedtools closest -d -a closingDAR_s15vs24.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs15v24.sorted.bed > closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed")
+system("bedtools closest -d -a openingDAR_s24vsMel.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed > openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed")
+system("bedtools closest -d -a closingDAR_s24vsMel.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed > closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed")
+system("bedtools closest -d -a openingDAR_s24vsIri.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed > openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed")
+system("bedtools closest -d -a closingDAR_s24vsIri.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed > closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed")
+
+system("bedtools closest -d -a openingDMAR_s15vs24.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs15v24.sorted.bed > openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed")
+system("bedtools closest -d -a closingDMAR_s15vs24.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs15v24.sorted.bed > closingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed")
+system("bedtools closest -d -a openingDMAR_s24vsMel.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed > openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed")
+system("bedtools closest -d -a closingDMAR_s24vsMel.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vMel.sorted.bed > closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed")
+system("bedtools closest -d -a openingDMAR_s24vsIri.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed > openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed")
+system("bedtools closest -d -a closingDMAR_s24vsIri.sorted.bed -b GRCz10.85.GENE.PROMOTER.DEGs24vIri.sorted.bed > closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed")
+
+# Import closest DEGs info
+hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24 <- read.table("hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24 <- read.table("hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel <- read.table("hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel <- read.table("hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri <- read.table("hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri <- read.table("hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+
+openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24 <- read.table("openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24 <- read.table("closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel <- read.table("openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel <- read.table("closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri <- read.table("openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri <- read.table("closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+
+openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24 <- read.table("openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+closingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24 <- read.table("closingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel <- read.table("openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel <- read.table("closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri <- read.table("openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri <- read.table("closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.sorted.bed", sep = "\t", header =F, stringsAsFactors =F)
+
+
+## 1.DMR ##
+# Add column names and merge DEG TPM information by "gene" column
+colnames(hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp <- merge(hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24,DEG_TPM,by = "gene")
+colnames(hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp <- merge(hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24,DEG_TPM,by = "gene")
+colnames(hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp <- merge(hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel,DEG_TPM,by = "gene")
+colnames(hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp <- merge(hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel,DEG_TPM,by = "gene")
+colnames(hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri ) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp <- merge(hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri,DEG_TPM,by = "gene")
+colnames(hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance") 
+hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp <- merge(hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri,DEG_TPM,by = "gene")
+
+# Generate dataframe and add DMR type, comparison columns
+a <- data.frame(hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$gene,hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$s15v24hpf_log2_change,hypoDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$distance)
+a$type <- "hypoDMR"
+a$comp <- "s15v24"
+b <- data.frame(hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$gene,hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$s15v24hpf_log2_change,hyperDMR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$distance)
+b$type <- "hyperDMR"
+b$comp <- "s15v24"
+c<- data.frame(hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$gene,hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$s24vMel_log2_change ,hypoDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$distance)
+c$type <- "hypoDMR"
+c$comp <- "s24vMel"
+d<- data.frame(hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$gene,hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$s24vMel_log2_change,hyperDMR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$distance)
+d$type <- "hyperDMR"
+d$comp <- "s24vMel"
+e<- data.frame(hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$gene,hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$s24vIri_log2_change,hypoDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$distance)
+e$type <- "hypoDMR"
+e$comp <- "s24vIri"
+f<- data.frame(hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$gene,hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$s24vIri_log2_change,hyperDMR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$distance)
+f$type <- "hyperDMR"
+f$comp <- "s24vIri"
+
+
+## 2.DAR ##
+# Add column names and merge DEG TPM information by "gene" column
+colnames(openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp <- merge(openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24,DEG_TPM,by = "gene")
+colnames(closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp <- merge(closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24,DEG_TPM,by = "gene")
+colnames(openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp <- merge(openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel,DEG_TPM,by = "gene")
+colnames(closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp <- merge(closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel,DEG_TPM,by = "gene")
+colnames(openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri ) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp <- merge(openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri,DEG_TPM,by = "gene")
+colnames(closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp <- merge(closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri,DEG_TPM,by = "gene")
+
+# Generate dataframe and add DAR type, comparison columns
+aa <- data.frame(openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$gene,openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$s15v24hpf_log2_change,openingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$distance)
+aa$type <- "openingDAR"
+aa$comp <- "s15v24"
+bb <- data.frame(closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$gene,closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$s15v24hpf_log2_change,closingDAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$distance)
+bb$type <- "closingDAR"
+bb$comp <- "s15v24"
+cc<- data.frame(openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$gene,openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$s24vMel_log2_change ,openingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$distance)
+cc$type <- "openingDAR"
+cc$comp <- "s24vMel"
+dd<- data.frame(closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$gene,closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$s24vMel_log2_change ,closingDAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$distance)
+dd$type <- "closingDAR"
+dd$comp <- "s24vMel"
+ee<- data.frame(openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$gene,openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$s24vIri_log2_change,openingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$distance)
+ee$type <- "openingDAR"
+ee$comp <- "s24vIri"
+ff<- data.frame(closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$gene,closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$s24vIri_log2_change,closingDAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$distance)
+ff$type <- "closingDAR"
+ff$comp <- "s24vIri"
+
+## 3.DMAR ##
+# Add column names and merge DEG TPM information by "gene" column
+colnames(openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp <- merge(openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24,DEG_TPM,by = "gene")
+colnames(closingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")
+closingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp <- merge(closingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24,DEG_TPM,by = "gene")
+colnames(openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")#4773
+openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp <- merge(openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel,DEG_TPM,by = "gene")
+colnames(closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")#1635
+closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp <- merge(closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel,DEG_TPM,by = "gene")
+colnames(openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri ) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")#5862
+openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp <- merge(openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri,DEG_TPM,by = "gene")
+colnames(closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri) <- c(colnames(DMAR),"chr_prom","start_prom","end_prom","gene","prom_label","distance")#1191
+closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp <- merge(closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri,DEG_TPM,by = "gene")
+
+# Generate dataframe and add DMAR type, comparison columns
+aaa <- data.frame(openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$gene,openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$s15v24hpf_log2_change,openingDMAR_s15vs24.GENE.PROMOTER.DEGs15v24.GeneExp$distance)
+aaa$type <- "openingDMAR"
+aaa$comp <- "s15v24"
+bbb <- data.frame("0",0,0)
+bbb$type <- "closingDMAR"
+bbb$comp <- "s15v24"
+ccc<- data.frame(openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$gene,openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$s24vMel_log2_change ,openingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$distance)
+ccc$type <- "openingDMAR"
+ccc$comp <- "s24vMel"
+ddd<- data.frame(closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$gene,closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$s24vMel_log2_change ,closingDMAR_s24vsMel.GENE.PROMOTER.DEGs24vsMel.GeneExp$distance)
+ddd$type <- "closingDMAR"
+ddd$comp <- "s24vMel"
+eee<- data.frame(openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$gene, openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$s24vIri_log2_change,openingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$distance)
+eee$type <- "openingDMAR"
+eee$comp <- "s24vIri"
+fff<- data.frame(closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$gene,closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$s24vIri_log2_change,closingDMAR_s24vsIri.GENE.PROMOTER.DEGs24vsIri.GeneExp$distance)
+fff$type <- "closingDMAR"
+fff$comp <- "s24vIri"
+
+# Add column names
+colnames(a)[1:3] <-c("gene","geneFC","distance")
+colnames(aa)[1:3] <-c("gene","geneFC","distance")
+colnames(aaa)[1:3] <-c("gene","geneFC","distance")
+colnames(b)[1:3] <-c("gene","geneFC","distance")
+colnames(bb)[1:3] <-c("gene","geneFC","distance")
+colnames(bbb)[1:3] <-c("gene","geneFC","distance")
+colnames(c)[1:3] <-c("gene","geneFC","distance")
+colnames(cc)[1:3] <-c("gene","geneFC","distance")
+colnames(ccc)[1:3] <-c("gene","geneFC","distance")
+colnames(d)[1:3] <-c("gene","geneFC","distance")
+colnames(dd)[1:3] <-c("gene","geneFC","distance")
+colnames(ddd)[1:3] <-c("gene","geneFC","distance")
+colnames(e)[1:3] <-c("gene","geneFC","distance")
+colnames(ee)[1:3] <-c("gene","geneFC","distance")
+colnames(eee)[1:3] <-c("gene","geneFC","distance")
+colnames(f)[1:3] <-c("gene","geneFC","distance")
+colnames(ff)[1:3] <-c("gene","geneFC","distance")
+colnames(fff)[1:3] <-c("gene","geneFC","distance")
+
+# Combined all the dataframe to a master list
+geneFC_DMR_DAR_DMAR<-rbind(a,b,c,d,e,f,aa,bb,cc,dd,ee,ff,aaa,bbb,ccc,ddd,eee,fff)
+# Reorder dataframe
+geneFC_DMR_DAR_DMAR$type <- factor(geneFC_DMR_DAR_DMAR$type, levels = c("hyperDMR","hypoDMR","closingDAR","openingDAR","closingDMAR","openingDMAR"))
+
+
+# Plot expression fold-change of clisest DEGs (<50kb) of epigenetically dynamic regions [Fig2e]
+p1<-ggplot(geneFC_DMR_DAR_DMAR[geneFC_DMR_DAR_DMAR$distance < 50000,], aes(x=type, y=-geneFC)) + #USE THIS FOR PAPER
+  geom_boxplot(aes(fill=type),position = position_dodge(0.9),outlier.shape=NA, outlier.size=NA)+ggtitle("Closest DEGs FC (within 50kb)")+ 
+  theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 14), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
+  labs(x = "Sample", y = "gene log2(FC)")+scale_fill_manual(values = mypalette[c(1:4,9,10)])+scale_color_manual(values=mypalette[c(1:4,9,10)])+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())  + theme(panel.background = element_rect(fill = 'white',colour = 'black'))
+p1+facet_grid(.~comp)+geom_hline(yintercept=0,linetype="dashed",color="red")
