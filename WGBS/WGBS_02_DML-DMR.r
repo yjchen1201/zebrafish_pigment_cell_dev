@@ -231,3 +231,54 @@ write.table(DMR24vIri_d30_p0.01, "DMR24vIri_d30_p0.01_wSMOOTHING.txt", row.names
 write.table(DMRMelvIri_d30_p0.01, "DMRMelvIri_d30_p0.01_wSMOOTHING.txt", row.names = F, col.names = F, sep = "\t",quote =F)
 write.table(DMR15vMel_d30_p0.01, "DMR15vMel_d30_p0.01_wSMOOTHING.txt", row.names = F, col.names = F, sep = "\t",quote =F)
 write.table(DMR15vIri_d30_p0.01, "DMR15vIri_d30_p0.01_wSMOOTHING.txt", row.names = F, col.names = F, sep = "\t",quote =F)
+
+          
+          
+## Generate WGBS signal bigwig files for Fig.3d and SupFig.7a ##
+# Import "DSS.txt" WGBS profile files, which are generated from "WGBS/WGBS_01_preprocessing.sh"
+## Notice! Please read the original output files but not use the variable above, otherwize the column information will be different
+s15_R1 <- read.table("15somite_NCC_Rep1_DSS.txt",sep = "\t", header = T, stringsAsFactors = F)
+s15_R2 <- read.table("15somite_NCC_Rep2_DSS.txt",sep = "\t", header = T, stringsAsFactors = F)
+s24_R1 <- read.table("24hpf_NCC_Rep1_DSS.txt",sep = "\t", header = T, stringsAsFactors = F)
+s24_R2 <- read.table("24hpf_NCC_Rep2_DSS.txt",sep = "\t", header = T, stringsAsFactors = F)
+Mel_R1 <- read.table("Mel_Rep1_DSS.txt",sep = "\t", header = T, stringsAsFactors = F)
+Mel_R2 <- read.table("Mel_Rep2_DSS.txt",sep = "\t", header = T, stringsAsFactors = F)
+Iri_R1 <- read.table("Iri_Rep1_DSS.txt",sep = "\t", header = T, stringsAsFactors = F)
+Iri_R2 <- read.table("Iri_Rep2_DSS.txt",sep = "\t", header = T, stringsAsFactors = F)
+
+# Merge WGBS data from replicated experiment and create an object of BSseq class.
+BSobj <-makeBSseqData(list(s15_R1[,c(1:4)],s15_R2[,c(1:4)],s24_R1[,c(1:4)],s24_R2[,c(1:4)],Mel_R1[,c(1:4)],Mel_R2[,c(1:4)],Iri_R1[,c(1:4)],Iri_R2[,c(1:4)]), c("s15_R1","s15_R2","24hpf_R1","24hpf_R2","Mel_R1","Mel_R2","Iri_R1","Iri_R2"))
+
+dml15v24 <- DMLtest(BSobj, group1 = c("s15_R1","s15_R2"), group2 = c("24hpf_R1","24hpf_R2"), smoothing = TRUE)
+dml24vMel <- DMLtest(BSobj, group1 = c("24hpf_R1","24hpf_R2"), group2 = c("Mel_R1","Mel_R2"), smoothing = TRUE)
+dml24vIri <- DMLtest(BSobj, group1 = c("24hpf_R1","24hpf_R2"), group2 = c("Iri_R1","Iri_R2"), smoothing = TRUE)
+dmlMelvIri <- DMLtest(BSobj, group1 = c("Mel_R1","Mel_R2"), group2 = c("Iri_R1","Iri_R2"), smoothing = TRUE)
+
+dml15 <- dml15v24[,c(1,2,3)] #smoothed values
+dml24 <- dml24vMel[,c(1,2,3)]
+dmlMel <- dml24vMel[,c(1,2,4)]
+dmlIri <- dml24vIri[,c(1,2,4)]
+
+# Generate smoothed CpG methylation bed file
+dml15$chr <- as.character(dml15$chr)
+dml15$end <- as.integer(dml15$pos+1)
+write.table(dml15[,c(1,2,4,3)],"SmoothedCpG_Methylation_s15.bed", sep = "\t", col.names = F, row.names =F, quote =F)
+
+dml24$chr <- as.character(dml24$chr)
+dml24$end <- as.integer(dml24$pos+1)
+write.table(dml24[,c(1,2,4,3)],"SmoothedCpG_Methylation_s24.bed", sep = "\t", col.names = F, row.names =F, quote =F)
+
+dmlMel$chr <- as.character(dmlMel$chr)
+dmlMel$end <- as.integer(dmlMel$pos+1)
+write.table(dmlMel[,c(1,2,4,3)],"SmoothedCpG_Methylation_Mel.bed", sep = "\t", col.names = F, row.names =F, quote =F)
+
+dmlIri$chr <- as.character(dmlIri$chr)
+dmlIri$end <- as.integer(dmlIri$pos+1)
+write.table(dmlIri[,c(1,2,4,3)],"SmoothedCpG_Methylation_Iri.bed", sep = "\t", col.names = F, row.names =F, quote =F)
+
+# Convert BedGraph to BigWig using UCSC tool in bash code
+system("bedGraphToBigWig SmoothedCpG_Methylation_s15.bed danRer10.chrom.sizes SmoothedCpG_Methylation_s15.bw")
+system("bedGraphToBigWig SmoothedCpG_Methylation_s24.bed danRer10.chrom.sizes SmoothedCpG_Methylation_s24.bw")
+system("bedGraphToBigWig SmoothedCpG_Methylation_Mel.bed danRer10.chrom.sizes SmoothedCpG_Methylation_Mel.bw")
+system("bedGraphToBigWig SmoothedCpG_Methylation_Iri.bed danRer10.chrom.sizes SmoothedCpG_Methylation_Iri.bw")
+
