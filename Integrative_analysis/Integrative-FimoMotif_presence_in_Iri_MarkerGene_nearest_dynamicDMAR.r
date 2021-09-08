@@ -118,3 +118,33 @@ colnames(df.OG2) <- colnames(Iri_Marker_50kb_DMAR_FIMO_TF[,c(70,72)])
 ht4=  Heatmap(df.OG2,name= "RPKM",col = colorRamp2(c(0,50,200,300,400), c("#BAE1FF","#FFFFBA","#FFB3BA","#E0301E","#800000")), cluster_rows = F, cluster_columns = FALSE)
 ht4
 ht2+ht+ht1+ht3+ht4
+
+######## Generate supFig8 stacked bar plot ###########
+#Import table (can be found in "Input_files" folder)
+data<-read.table(file="supFig8_table_Motif_presence_in_IriDMAR_nearest_IriDEGs.txt", header=TRUE,sep="\t")
+#Reorder the genes, and motif combination
+data$genename <- reorder(data$genename, data$Order)
+data$Motif_presence <- factor(data$Motif_presence, levels=c("ALX only","SOX10 only","TFEC only", "ALX & SOX10","ALX & TFEC","SOX10 & TFEC","ALX & SOX10 & TFEC","None"))
+#choose color
+mypalette <-c(brewer.pal(8,"Set3"))
+#plot
+p3<-ggplot(data, aes(fill=Motif_presence, y=DMAR_count, x=genename))+
+  geom_bar(position="stack", stat="identity")+
+  labs(y= "DM/AR counts", x="Gene name")+
+  coord_flip()+
+  theme_bw() + 
+  theme(
+    panel.border = element_rect(colour = "black",size = 0.5),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(), 
+    axis.line = element_line(colour = "black",size = 0.25),
+    axis.title=element_text(size=12,face = "bold"),
+    axis.text.x = element_text(face = "bold",size = 12, color="black"), 
+    axis.text.y = element_text(face = "bold.italic",size = 8, color="black")
+)+
+  theme(panel.background = element_rect(fill = 'white',colour = 'black'))+
+  theme(legend.title=element_text(size=12,face = "bold"),legend.text=element_text(size=10,face = "bold"))+
+  scale_fill_discrete(name = "Motif presence", breaks=c("ALX only","SOX10 only","TFEC only", "ALX & SOX10","ALX & TFEC","SOX10 & TFEC","ALX & SOX10 & TFEC","None"))+
+  theme(legend.justification=c(0.95,0.95), legend.position=c(0.95,0.95))+
+  scale_fill_manual(values = mypalette)+ scale_color_manual(values=mypalette)
+p3
