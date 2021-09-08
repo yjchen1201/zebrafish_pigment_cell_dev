@@ -21,11 +21,22 @@ a <-ggplot(d, aes(Size, fill = Type, colour = Type)) + geom_density(alpha = 0, a
       labs(x = "Size (bp)", y = "Density")+scale_x_continuous(limits = c(0,2000))+scale_fill_manual(values = mypalette2[c(1,2,3)])+scale_color_manual(values=mypalette2[c(1,2,3)])+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))
 a
 
-# Identify different classes of DMARs 
+## Plot CpG density and region size for solo DMR, solo DAR and DMARs [Figure S3c]
+### hypothesize that regions with no change in methylation = CGIs and dynamic change = low CpG density
 All_DMRs <- DMAR[DMAR$DMRsize != 0,] #32715
 All_DARs <- DMAR[DMAR$DARsize !=0,] #54921
 Only_DARs <- DMAR[DMAR$DMRsize == 0 & DMAR$DARsize >0,] #39669
 Only_DMRs <- DMAR[DMAR$DARsize == 0 & DMAR$DMRsize >0,] #17463
+dynamic_DMARs <- DMAR[DMAR$DMRsize != 0 & DMAR$DARsize !=0,] #15252
+
+CD<-data.frame(c(rep("DMR",nrow(All_DMRs)), rep("DAR",nrow(All_DARs)), rep("soloDMR",nrow(Only_DMRs)), rep("soloDAR",nrow(Only_DARs)), rep("dynamicDMAR",nrow(dynamic_DMARs))),  c(All_DMRs$CpGdensity100bp,All_DARs$CpGdensity100bp,Only_DMRs$CpGdensity100bp,Only_DARs$CpGdensity100bp,dynamic_DMARs$CpGdensity100bp))
+colnames(CD) <- c("Type","CpG_density")
+CD$Type <- factor(CD$Type, levels = c("DMR","soloDMR","DAR","soloDAR","dynamicDMAR"))
+
+b <-ggplot(CD, aes(x= Type,y=CpG_density))+ geom_violin(aes(fill = Type), trim = FALSE) +geom_boxplot(outlier.colour="black", outlier.shape=16, outlier.size=2, notch=FALSE,width=0.3)+ggtitle(paste("CpGs density distribution in Epigenetically Dynamic Regions"))+theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 16), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
+      labs(x = "CpG density (# of CpGs in 100bp)", y = "Density")+scale_fill_manual(values = mypalette4)+scale_color_manual(values=mypalette4)+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))
+b
+# Identify different classes of DMARs 
 ## Calculate proportion of solitary hyper DMRs in hyper DMRs.
 str(Only_DMRs[Only_DMRs$DMRs24vMel <0 | Only_DMRs$DMRs24vIri <0,]) #650
 str(DMAR[DMAR$DMRs24vMel <0 | DMAR$DMRs24vIri <0,]) #695    ~93.5% hyperDMRs are solitary hyper DMRs and occur in regions with no peaks (650-7-9-15)/650*100 = >95%
@@ -121,6 +132,44 @@ as.data.frame(table(Functional_Only_DARs_Mel_specific_open$Annotation))
 # 5 promoter-TSS   23
 # 6          TTS    3
 
+# Distribution of CpG count and DMR/DMAR size of solo hypoDMRs and DMARs [Figure S4b]
+## Extract specific DMR information out
+soloMel_hypoDMR<-(DMAR[DMAR$DMRs24vMel > 0 & DMAR$DARs24vMel == 0 & DMAR$DMRs24vIri <=0 & DMAR$DARs24vIri == 0 & DMAR$DARsize == 0 & DMAR$DMRsize >0,]) #6701 solo Mel hypoDMR 
+soloMel_hyperDMR<-(DMAR[DMAR$DMRs24vMel < 0 & DMAR$DARs24vMel == 0 & DMAR$DMRs24vIri >= 0 & DMAR$DARs24vIri == 0 & DMAR$DARsize == 0 & DMAR$DMRsize >0,]) #210 solo Mel hyperDMR
+soloMel_openDAR<-(DMAR[DMAR$DMRs24vMel == 0 & DMAR$DARs24vMel > 0 & DMAR$DMRs24vIri == 0 & DMAR$DARs24vIri <= 0 & DMAR$DMRsize == 0 & DMAR$DARsize >0,]) #3605 solo Mel openDAR
+soloMel_closeDAR<-(DMAR[DMAR$DMRs24vMel == 0 & DMAR$DARs24vMel < 0 & DMAR$DMRs24vIri == 0 & DMAR$DARs24vIri >= 0 & DMAR$DMRsize == 0 & DMAR$DARsize >0,]) #8807 solo Mel closeDAR
+
+soloIri_hypoDMR<-(DMAR[DMAR$DMRs24vIri > 0 & DMAR$DARs24vIri == 0 & DMAR$DMRs24vMel <=0 & DMAR$DARs24vMel == 0 &DMAR$DARsize == 0 & DMAR$DMRsize >0,]) #5672 solo Iri hypoDMR 
+soloIri_hyperDMR<-(DMAR[DMAR$DMRs24vIri < 0 & DMAR$DARs24vIri == 0 & DMAR$DMRs24vMel >= 0 & DMAR$DARs24vMel == 0 & DMAR$DARsize == 0 & DMAR$DMRsize >0,]) #289 solo Iri hyperDMR
+soloIri_openDAR<-(DMAR[DMAR$DMRs24vIri == 0 & DMAR$DARs24vIri > 0 & DMAR$DMRs24vMel == 0 & DMAR$DARs24vMel <= 0 & DMAR$DMRsize == 0 & DMAR$DARsize >0,]) #3645 solo Iri openDAR
+soloIri_closeDAR<-(DMAR[DMAR$DMRs24vIri == 0 & DMAR$DARs24vIri < 0 & DMAR$DMRs24vMel == 0 & DMAR$DARs24vMel >= 0 & DMAR$DMRsize == 0 & DMAR$DARsize >0,]) #6043 solo Iri closeDAR
+
+soloMel_hypoDMR_open <- soloMel_hypoDMR[soloMel_hypoDMR$IDR_s24 > 0 & soloMel_hypoDMR$IDR_M > 0,] #2370
+soloMel_hypoDMR_other <- soloMel_hypoDMR[(soloMel_hypoDMR$IDR_s24 > 0 & soloMel_hypoDMR$IDR_M == 0) | (soloMel_hypoDMR$IDR_s24 == 0 & soloMel_hypoDMR$IDR_M > 0),] #2338
+soloMel_hypoDMR_close <- soloMel_hypoDMR[soloMel_hypoDMR$IDR_s24 == 0 & soloMel_hypoDMR$IDR_M == 0,] #1993
+soloIri_hypoDMR_open <- soloIri_hypoDMR[soloIri_hypoDMR$IDR_s24 > 0 & soloIri_hypoDMR$IDR_I > 0,] #1643
+soloIri_hypoDMR_other <- soloIri_hypoDMR[(soloIri_hypoDMR$IDR_s24 > 0 & soloIri_hypoDMR$IDR_I == 0) | (soloIri_hypoDMR$IDR_s24 == 0 & soloIri_hypoDMR$IDR_I > 0),] #2046
+soloIri_hypoDMR_close <- soloIri_hypoDMR[soloIri_hypoDMR$IDR_s24 == 0 & soloIri_hypoDMR$IDR_I == 0,] #1983
+
+## Generate violin plot
+t<-data.frame(c(soloMel_hypoDMR_open$DMRsize,soloMel_hypoDMR_other$DMRsize,soloMel_hypoDMR_close$DMRsize,soloIri_hypoDMR_open$DMRsize,soloIri_hypoDMR_other$DMRsize,soloIri_hypoDMR_close$DMRsize,openingDMAR_s24vsMel$DMRsize,closingDMAR_s24vsMel$DMRsize,openingDMAR_s24vsIri$DMRsize, closingDMAR_s24vsIri$DMRsize),c(soloMel_hypoDMR_open$aveCpGcount,soloMel_hypoDMR_other$aveCpGcount,soloMel_hypoDMR_close$aveCpGcount,soloIri_hypoDMR_open$aveCpGcount,soloIri_hypoDMR_other$aveCpGcount,soloIri_hypoDMR_close$aveCpGcount,openingDMAR_s24vsMel$aveCpGcount,closingDMAR_s24vsMel$aveCpGcount,openingDMAR_s24vsIri$aveCpGcount, closingDMAR_s24vsIri$aveCpGcount),c(soloMel_hypoDMR_open$CpGdensity100bp,soloMel_hypoDMR_other$CpGdensity100bp,soloMel_hypoDMR_close$CpGdensity100bp,soloIri_hypoDMR_open$CpGdensity100bp,soloIri_hypoDMR_other$CpGdensity100bp,soloIri_hypoDMR_close$CpGdensity100bp,openingDMAR_s24vsMel$CpGdensity100bp,closingDMAR_s24vsMel$CpGdensity100bp,openingDMAR_s24vsIri$CpGdensity100bp, closingDMAR_s24vsIri$CpGdensity100bp),c(rep("hypoDMR_open",nrow(soloMel_hypoDMR_open)),rep("hypoDMR_other",nrow(soloMel_hypoDMR_other)),rep("hypoDMR_other",nrow(soloMel_hypoDMR_close)),rep("hypoDMR_open",nrow(soloIri_hypoDMR_open)),rep("hypoDMR_other",nrow(soloIri_hypoDMR_other)),rep("hypoDMR_other",nrow(soloIri_hypoDMR_close)),rep("openingDMAR",nrow(openingDMAR_s24vsMel)),rep("closingDMAR",nrow(closingDMAR_s24vsMel)),rep("openingDMAR",nrow(openingDMAR_s24vsIri)),rep("closingDMAR",nrow(closingDMAR_s24vsIri))),c(rep("s24vMel",nrow(soloMel_hypoDMR_open)),rep("s24vMel",nrow(soloMel_hypoDMR_other)),rep("s24vMel",nrow(soloMel_hypoDMR_close)),rep("s24vIri",nrow(soloIri_hypoDMR_open)),rep("s24vIri",nrow(soloIri_hypoDMR_other)),rep("s24vIri",nrow(soloIri_hypoDMR_close)),rep("s24vMel",nrow(openingDMAR_s24vsMel)),rep("s24vMel",nrow(closingDMAR_s24vsMel)),rep("s24vIri",nrow(openingDMAR_s24vsIri)),rep("s24vIri",nrow(closingDMAR_s24vsIri))))
+colnames(t) <-c("DMRsize","aveCpG","CpGdensity","type","comp")
+t$type <- factor(t$type, levels = c("hypoDMR_open","hypoDMR_other","closingDMAR","openingDMAR"))
+
+### Plot average CpG count in DM/ARs
+p1<-ggplot(t, aes(x=type, y=aveCpG)) +
+  geom_violin(aes(fill=type),trim=T,adjust =2)+geom_boxplot(fill="white",position = position_dodge(0.9),outlier.shape=NA, outlier.size=NA,width = 0.2)+ggtitle("Ave CpG Count")+ 
+  theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 14), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
+  labs(x = "Sample", y = "# of CpG")+scale_fill_manual(values = c("#c8c7c7","#696a6a",mypalette[c(9,10)]))+scale_color_manual(values=c("#c8c7c7","#696a6a",mypalette[c(9,10)]))+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())  + theme(panel.background = element_rect(fill = 'white',colour = 'black'))
+p1+facet_grid(.~comp)
+
+### Plot DMR size in DM/ARs
+p2<-ggplot(t, aes(x=type, y=DMRsize)) +
+  geom_violin(aes(fill=type),trim=T,adjust =2)+geom_boxplot(fill="white",position = position_dodge(0.9),outlier.shape=NA, outlier.size=NA,width = 0.2)+ggtitle("DMR size")+ 
+  theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 14), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
+  labs(x = "Sample", y = "DMR size")+scale_fill_manual(values = c("#c8c7c7","#696a6a",mypalette[c(9,10)]))+scale_color_manual(values=c("#c8c7c7","#696a6a",mypalette[c(9,10)]))+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())  + theme(panel.background = element_rect(fill = 'white',colour = 'black'))
+p2+facet_grid(.~comp)
+
 # Make heatmap Mel specific DAR vs meth [Figure S4c-d]
 library(ComplexHeatmap) ## For heatmap
 library(circlize) ## For color options
@@ -134,9 +183,6 @@ ht = Heatmap(df.OG, column_title = "Mel-specific opening soloDAR)",name= "Methyl
     cluster_rows = F, cluster_columns = FALSE,show_row_names = FALSE,split = split)
 ht
 ## Use the same approach to generate methylation heatmap for Mel-specific closing soloDAR, Iri-specific opening soloDAR and Iri-specific closing soloDAR.
-
-# Dynamic DMARs
-dynamic_DMARs <- DMAR[DMAR$DMRsize != 0 & DMAR$DARsize !=0,] #15252
 
 # Calculate the counts of differentially methylated and accessible regions [Numbers used in Figure 2a]
 str(DMAR[DMAR$DMRMelvIri >0 & DMAR$DARMelvIri >0,]) #1697 hypo opening
