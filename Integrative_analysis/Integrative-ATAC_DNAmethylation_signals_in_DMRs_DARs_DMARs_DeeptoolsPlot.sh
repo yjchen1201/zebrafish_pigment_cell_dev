@@ -38,10 +38,10 @@ for i in *onlyCoord.srt.bed; do bedtools intersect -wa -a $i -b SOX10_DBD_sites_
 # The WGBS singal bigWig files are generated using code in "WGBS/WGBS_02_DML-DMR.r"
 ## 24NCC and Iri epi signals at those regions ##  
 computeMatrix scale-regions -bs 100 -p max \
--S /scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_s24.bw \
-/scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_Iri.bw \
-/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_s24pos_merged_forDeeptools.bw \
-/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_Iri_merged_forDeeptools.bw \
+-S SmoothedCpG_Methylation_s24.bw \
+SmoothedCpG_Methylation_Iri.bw \
+ATAC_s24pos_merged_forDeeptools.bw \
+ATAC_Iri_merged_forDeeptools.bw \
 -R Iri_solo_openDAR_s24vsIri.onlyCoord.with_ALX4_MOTIF.bed \
 Iri_solo_closeDAR_s24vsIri.onlyCoord.with_ALX4_MOTIF.bed \
 Iri_solo_hypoDMR_s24vsIri.onlyCoord.with_ALX4_MOTIF.bed \
@@ -51,10 +51,10 @@ Iri_hypoclosing_DMAR_s24vsIri.onlyCoord.with_ALX4_MOTIF.bed \
 -o Iri_ALX4_in_soloDAR_soloDMR_DMAR_s24vIri_bs100_1500UpAndDown.mat.gz > Iri_ALX4_in_soloDAR_soloDMR_DMAR_s24vIri_bs100_1500UpAndDown.mat.gz.log 2>&1 &
   
 computeMatrix scale-regions -bs 100 -p max \
--S /scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_s24.bw \
-/scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_Iri.bw \
-/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_s24pos_merged_forDeeptools.bw \
-/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_Iri_merged_forDeeptools.bw \
+-S SmoothedCpG_Methylation_s24.bw \
+SmoothedCpG_Methylation_Iri.bw \
+ATAC_s24pos_merged_forDeeptools.bw \
+ATAC_Iri_merged_forDeeptools.bw \
 -R Iri_solo_openDAR_s24vsIri.onlyCoord.with_GBX2_MOTIF.bed \
 Iri_solo_closeDAR_s24vsIri.onlyCoord.with_GBX2_MOTIF.bed \
 Iri_solo_hypoDMR_s24vsIri.onlyCoord.with_GBX2_MOTIF.bed \
@@ -77,10 +77,10 @@ Iri_hypoclosing_DMAR_s24vsIri.onlyCoord.with_TFEC_MOTIF.bed \
 -o Iri_TFEC_in_soloDAR_soloDMR_DMAR_s24vIri_bs100_1500UpAndDown.mat.gz > Iri_TFEC_in_soloDAR_soloDMR_DMAR_s24vIri_bs100_1500UpAndDown.mat.gz.log 2>&1 &
   
 computeMatrix scale-regions -bs 100 -p max \
--S /scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_s24.bw \
-/scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_Iri.bw \
-/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_s24pos_merged_forDeeptools.bw \
-/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_Iri_merged_forDeeptools.bw \
+-S SmoothedCpG_Methylation_s24.bw \
+SmoothedCpG_Methylation_Iri.bw \
+ATAC_s24pos_merged_forDeeptools.bw \
+ATAC_Iri_merged_forDeeptools.bw \
 -R Iri_solo_openDAR_s24vsIri.onlyCoord.with_SOX10_MOTIF.bed \
 Iri_solo_closeDAR_s24vsIri.onlyCoord.with_SOX10_MOTIF.bed \
 Iri_solo_hypoDMR_s24vsIri.onlyCoord.with_SOX10_MOTIF.bed \
@@ -98,10 +98,10 @@ plotHeatmap -m Iri_SOX10_in_soloDAR_soloDMR_DMAR_s24vIri_bs100_1500UpAndDown.mat
   
 ## 24NCC and Mel epi signals at those regions ##  
 computeMatrix scale-regions -bs 100 -p max \
--S /scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_s24.bw \
-/scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_Mel.bw \
-/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_s24pos_merged_forDeeptools.bw \
-/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_Mel_merged_forDeeptools.bw \
+-S SmoothedCpG_Methylation_s24.bw \
+SmoothedCpG_Methylation_Mel.bw \
+ATAC_s24pos_merged_forDeeptools.bw \
+ATAC_Mel_merged_forDeeptools.bw \
 -R Iri_solo_openDAR_s24vsIri.onlyCoord.with_ALX4_MOTIF.bed \
 Iri_solo_closeDAR_s24vsIri.onlyCoord.with_ALX4_MOTIF.bed \
 Iri_solo_hypoDMR_s24vsIri.onlyCoord.with_ALX4_MOTIF.bed \
@@ -111,10 +111,10 @@ Iri_hypoclosing_DMAR_s24vsIri.onlyCoord.with_ALX4_MOTIF.bed \
 -o Mel_ALX4_in_soloDAR_soloDMR_DMAR_s24vIri_bs100_1500UpAndDown.mat.gz > Mel_ALX4_in_soloDAR_soloDMR_DMAR_s24vIri_bs100_1500UpAndDown.mat.gz.log 2>&1 &
   
 computeMatrix scale-regions -bs 100 -p max \
--S /scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_s24.bw \
-/scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_Mel.bw \
-/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_s24pos_merged_forDeeptools.bw \
-/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_Mel_merged_forDeeptools.bw \
+-S SmoothedCpG_Methylation_s24.bw \
+SmoothedCpG_Methylation_Mel.bw \
+ATAC_s24pos_merged_forDeeptools.bw \
+ATAC_Mel_merged_forDeeptools.bw \
 -R Iri_solo_openDAR_s24vsIri.onlyCoord.with_GBX2_MOTIF.bed \
 Iri_solo_closeDAR_s24vsIri.onlyCoord.with_GBX2_MOTIF.bed \
 Iri_solo_hypoDMR_s24vsIri.onlyCoord.with_GBX2_MOTIF.bed \
@@ -137,10 +137,10 @@ Iri_hypoclosing_DMAR_s24vsIri.onlyCoord.with_TFEC_MOTIF.bed \
 -o Mel_TFEC_in_soloDAR_soloDMR_DMAR_s24vIri_bs100_1500UpAndDown.mat.gz > Mel_TFEC_in_soloDAR_soloDMR_DMAR_s24vIri_bs100_1500UpAndDown.mat.gz.log 2>&1 &
   
 computeMatrix scale-regions -bs 100 -p max \
--S /scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_s24.bw \
-/scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_Mel.bw \
-/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_s24pos_merged_forDeeptools.bw \
-/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_Mel_merged_forDeeptools.bw \
+-S SmoothedCpG_Methylation_s24.bw \
+SmoothedCpG_Methylation_Mel.bw \
+ATAC_s24pos_merged_forDeeptools.bw \
+ATAC_Mel_merged_forDeeptools.bw \
 -R Iri_solo_openDAR_s24vsIri.onlyCoord.with_SOX10_MOTIF.bed \
 Iri_solo_closeDAR_s24vsIri.onlyCoord.with_SOX10_MOTIF.bed \
 Iri_solo_hypoDMR_s24vsIri.onlyCoord.with_SOX10_MOTIF.bed \
@@ -160,20 +160,20 @@ plotHeatmap -m Mel_SOX10_in_soloDAR_soloDMR_DMAR_s24vIri_bs100_1500UpAndDown.mat
 ##Iri/Mel solo_hypo/hyper_DMRs, solo_opening/closing_DARs, hypo_opening/closing_DMARs location bed files are generated using code in "Integrative_analysis/Integrative-DMAR-analysis.r"
 # 24NCC -> Mel
 computeMatrix scale-regions -bs 200 \
--S /scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_s24.bw \
-/scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_Mel.bw \
-/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_s24pos_merged_forDeeptools.bw \
-/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_Mel_merged_forDeeptools.bw \
+-S SmoothedCpG_Methylation_s24.bw \
+SmoothedCpG_Methylation_Mel.bw \
+ATAC_s24pos_merged_forDeeptools.bw \
+ATAC_Mel_merged_forDeeptools.bw \
 -R soloMel_openDAR_location.bed soloMel_closeDAR_location.bed soloMel_hypoDMR_location.bed \
 soloMel_hyperDMR_location.bed openingDMAR_s24vsMel_location.bed closingDMAR_s24vsMel_location.bed \
 --beforeRegionStartLength 3000 --regionBodyLength 1000 --afterRegionStartLength 3000 -o soloDAR_soloDMR_DMAR_s24vMel.mat.gz
 
 # 24NCC -> Iri
 computeMatrix scale-regions -bs 200 \
--S /scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_s24.bw \
-/scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_Iri.bw \
-/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_s24pos_merged_forDeeptools.bw \
-/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_Iri_merged_forDeeptools.bw \
+-S SmoothedCpG_Methylation_s24.bw \
+SmoothedCpG_Methylation_Iri.bw \
+ATAC_s24pos_merged_forDeeptools.bw \
+ATAC_Iri_merged_forDeeptools.bw \
 -R soloIri_openDAR_location.bed soloIri_closeDAR_location.bed soloIri_hypoDMR_location.bed \
 soloIri_hyperDMR_location.bed openingDMAR_s24vsIri_location.bed closingDMAR_s24vsIri_location.bed \
 --beforeRegionStartLength 3000 --regionBodyLength 1000 --afterRegionStartLength 3000 -o soloDAR_soloDMR_DMAR_s24vIri.mat.gz
