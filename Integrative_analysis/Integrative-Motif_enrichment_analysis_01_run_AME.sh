@@ -57,22 +57,22 @@ ame --verbose 1 --oc Mel_specific_closeDAR -scoring totalhits --method fisher --
 
 awk 'OFS="\t" {print $1,$2,$3,$1":"$2"-"$3}' Mel_Iri_shared_opening_DAR.bed > Mel_Iri_shared_opening_DAR.onlyCoord.bed
 twoBitToFa -bed=Mel_Iri_shared_opening_DAR.onlyCoord.bed danRer10.2bit Mel_Iri_shared_opening_DAR.fasta
-ame --verbose 1 --oc Mel_Iri_shared_openDAR -scoring totalhits --method fisher --control All_IDR_peaks_Merged.fa Mel_Iri_shared_opening_DAR.fasta /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/JASPAR_2016_Vertebrate.meme
+ame --verbose 1 --oc Mel_Iri_shared_openDAR -scoring totalhits --method fisher --control All_IDR_peaks_Merged.fa Mel_Iri_shared_opening_DAR.fasta JASPAR_2016_Vertebrate.meme
 
 awk 'OFS="\t" {print $1,$2,$3,$1":"$2"-"$3}' Mel_Iri_shared_closing_DAR.bed > Mel_Iri_shared_closing_DAR.onlyCoord.bed
 twoBitToFa -bed=Mel_Iri_shared_closing_DAR.onlyCoord.bed danRer10.2bit Mel_Iri_shared_closing_DAR.fasta
-ame --verbose 1 --oc Mel_Iri_shared_closeDAR -scoring totalhits --method fisher --control All_IDR_peaks_Merged.fa Mel_Iri_shared_closing_DAR.fasta /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/JASPAR_2016_Vertebrate.meme
+ame --verbose 1 --oc Mel_Iri_shared_closeDAR -scoring totalhits --method fisher --control All_IDR_peaks_Merged.fa Mel_Iri_shared_closing_DAR.fasta JASPAR_2016_Vertebrate.meme
 
 
 #DMARs#
 awk 'OFS="\t" {print $4,$1,$2,$4":"$1"-"$2}' Iri_specific_hypo_opening.DMAR.bed > Iri_specific_hypo_opening.DMAR.onlyCoord.bed
 twoBitToFa -bed=Iri_specific_hypo_opening.DMAR.onlyCoord.bed danRer10.2bit Iri_specific_hypo_opening.DMAR.fasta
-ame --verbose 1 --oc Iri_specific_openDMAR -scoring totalhits --method fisher --control All_IDR_peaks_Merged.fa Iri_specific_hypo_opening.DMAR.fasta /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/JASPAR_2016_Vertebrate.meme
+ame --verbose 1 --oc Iri_specific_openDMAR -scoring totalhits --method fisher --control All_IDR_peaks_Merged.fa Iri_specific_hypo_opening.DMAR.fasta JASPAR_2016_Vertebrate.meme
 
 awk 'OFS="\t" {print $4,$1,$2,$4":"$1"-"$2}' Mel_specific_hypo_opening.DMAR.bed > Mel_specific_hypo_opening.DMAR.onlyCoord.bed
 twoBitToFa -bed=Mel_specific_hypo_opening.DMAR.onlyCoord.bed danRer10.2bit Mel_specific_hypo_opening.DMAR.fasta
-ame --verbose 1 --oc Mel_specific_openDMAR -scoring totalhits --method fisher --control All_IDR_peaks_Merged.fa Mel_specific_hypo_opening.DMAR.fasta /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/JASPAR_2016_Vertebrate.meme
+ame --verbose 1 --oc Mel_specific_openDMAR -scoring totalhits --method fisher --control All_IDR_peaks_Merged.fa Mel_specific_hypo_opening.DMAR.fasta JASPAR_2016_Vertebrate.meme
 
 awk 'OFS="\t" {print $4,$1,$2,$4":"$1"-"$2}' Mel_Iri_shared_hypo_opening.DMAR.bed > Mel_Iri_shared_hypo_opening.DMAR.onlyCoord.bed
 twoBitToFa -bed=Mel_Iri_shared_hypo_opening.DMAR.onlyCoord.bed danRer10.2bit Mel_Iri_shared_hypo_opening.DMAR.fasta
-ame --verbose 1 --oc Mel_Iri_shared_openDMAR -scoring totalhits --method fisher --control All_IDR_peaks_Merged.fa Mel_Iri_shared_hypo_opening.DMAR.fasta /scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/JASPAR_2016_Vertebrate.meme
+ame --verbose 1 --oc Mel_Iri_shared_openDMAR -scoring totalhits --method fisher --control All_IDR_peaks_Merged.fa Mel_Iri_shared_hypo_opening.DMAR.fasta JASPAR_2016_Vertebrate.meme
