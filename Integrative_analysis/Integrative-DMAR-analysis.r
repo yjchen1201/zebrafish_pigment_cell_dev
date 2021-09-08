@@ -121,7 +121,7 @@ as.data.frame(table(Functional_Only_DARs_Mel_specific_open$Annotation))
 # 5 promoter-TSS   23
 # 6          TTS    3
 
-# Make heatmap Mel specific DAR vs meth [Figure S4b]
+# Make heatmap Mel specific DAR vs meth [Figure S4c-d]
 library(ComplexHeatmap) ## For heatmap
 library(circlize) ## For color options
 name <- Only_DARs_Mel_specific_open[,4]
