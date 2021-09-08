@@ -115,11 +115,11 @@ Iri_AME_masterlist_withLogP_all1 <- Iri_AME_masterlist_withLogP[Iri_AME_masterli
 Iri_AME_masterlist_withLogP_reordered <- rbind(Iri_AME_masterlist_withLogP_all3,Iri_AME_masterlist_withLogP_all2,Iri_AME_masterlist_withLogP_all1)
 Iri_AME_masterlist_withLogP_reordered<-unique(Iri_AME_masterlist_withLogP_reordered)
 
-# Re-order motif based on DBD
+### Generate Fig3b heatmap plot ###
 library("ComplexHeatmap") ## For heatmap
-library("circlize") ## For color options
-
-Iri_AME_masterlist_withLogP[order(Iri_AME_masterlist_withLogP[,"DBD"],Iri_AME_masterlist_withLogP[,"genename.x"]),]
+library("circlize") ## For color options  
+# Re-order motif based on DBD and plot #
+Iri_AME_masterlist_withLogP[order(Iri_AME_masterlist_withLogP[,"DBD"],Iri_AME_masterlist_withLogP[,"genename.x"]),] 
 name <- Iri_AME_masterlist_withLogP[order(Iri_AME_masterlist_withLogP[,"DBD"],Iri_AME_masterlist_withLogP[,"genename.x"]),1]
 df.OG2 <- -Iri_AME_masterlist_withLogP[order(Iri_AME_masterlist_withLogP[,"DBD"],Iri_AME_masterlist_withLogP[,"genename.x"]),c(2,3,4)]
 row.names(df.OG2) <- name
@@ -152,6 +152,7 @@ ht3 = Heatmap(df.OG, column_title = "TFs",name= "-log pval",col = colorRamp2(c(0
     cluster_rows = F, cluster_columns = FALSE,show_row_names = F)
 ht3 #12 x 3
 
+### Generate Fig3a heatmap plot ###
 # Mel open AME motif figure #
 Mel_hypoDMR_AME_filtered <- Mel_hypoDMR_AME_genename_DEG[Mel_hypoDMR_AME_genename_DEG$s24vMel_log2_change <0 | Mel_hypoDMR_AME_genename_DEG$MelvIri_log2_change >0 & Mel_hypoDMR_AME_genename_DEG$Mel > 5,c("genename.x","pvalue_log","DBD","s24vMel_log2_change","s24vIri_log2_change","MelvIri_log2_change","s24","Mel","Iri")] #upreg in mel
 Mel_openDAR_AME_filtered <- Mel_openDAR_AME_genename_DEG[Mel_openDAR_AME_genename_DEG$s24vMel_log2_change <0 | Mel_openDAR_AME_genename_DEG$MelvIri_log2_change >0 & Mel_openDAR_AME_genename_DEG$Mel > 5,c("genename.x","pvalue_log","DBD","s24vMel_log2_change","s24vIri_log2_change","MelvIri_log2_change","s24","Mel","Iri"),] #upreg in mel
@@ -171,7 +172,7 @@ Mel_AME_masterlist_withLogP_all1 <- Mel_AME_masterlist_withLogP[Mel_AME_masterli
 Mel_AME_masterlist_withLogP_reordered <- rbind(Mel_AME_masterlist_withLogP_all3,Mel_AME_masterlist_withLogP_all2,Mel_AME_masterlist_withLogP_all1)
 Mel_AME_masterlist_withLogP_reordered <-unique(Mel_AME_masterlist_withLogP_reordered)
 
-# Re-order motif based on DBD
+# Re-order motif based on DBD and plot #
 name <- Mel_AME_masterlist_withLogP[order(Mel_AME_masterlist_withLogP[,"DBD"],Mel_AME_masterlist_withLogP[,"genename.x"]),1]
 df.OG2 <- -Mel_AME_masterlist_withLogP[order(Mel_AME_masterlist_withLogP[,"DBD"],Mel_AME_masterlist_withLogP[,"genename.x"]),c(2,3,4)]
 row.names(df.OG2) <- name
@@ -179,10 +180,6 @@ colnames(df.OG2) <- c("24hpf vs Mel", "24hpf vs Iri", "Mel vs Iri")
 htname =  Heatmap(df.OG2, column_title = "DEG Transcription Factors",name= "log2 Fold Change",col = colorRamp2(c(-5, 0, 5), c("#baffc9", "#fffef2","#c9c9ff")), 
     cluster_rows = F, cluster_columns = FALSE,show_row_names = T)
 htname
-
-#ht2 =  Heatmap(df.OG2, column_title = "DEG Transcription Factors",name= "log2 Fold Change",col = colorRamp2(c(-5, 0, 5), c("#baffc9", "#fffef2","#c9c9ff")), 
-#    cluster_rows = F, cluster_columns = FALSE,show_row_names = F)
-#ht2
 
 df.OG <- Mel_AME_masterlist_withLogP[order(Mel_AME_masterlist_withLogP[,"DBD"],Mel_AME_masterlist_withLogP[,"genename.x"]),c(5,6,7)]
 row.names(df.OG) <- name
