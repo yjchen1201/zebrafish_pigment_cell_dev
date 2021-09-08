@@ -33,7 +33,7 @@ for i in *onlyCoord.srt.bed; do bedtools intersect -wa -a $i -b GBX2_DBD_sites_d
 for i in *onlyCoord.srt.bed; do bedtools intersect -wa -a $i -b TFEC_DBD_sites_danRer10.bed > ${file/.srt.bed/.with_TFEC_MOTIF.bed};done &
 for i in *onlyCoord.srt.bed; do bedtools intersect -wa -a $i -b SOX10_DBD_sites_danRer10.bed > ${file/.srt.bed/.with_SOX10_MOTIF.bed};done &
 
-# Use deeptools to generate heatmap plot for DNA methylation and ATAC signal across iridophore-associated DM/ARs with a particular TF motif # [Fig.3d and SupFig.7a]
+#### Use deeptools to generate heatmap plot for DNA methylation and ATAC signal across iridophore-associated DM/ARs with a particular TF motif [Fig.3d and SupFig.7a] #### 
 # The ATAC signal bigWig files are generated using code in "ATAC/ATAC_01_preprocessing.sh"
 # The WGBS singal bigWig files are generated using code in "WGBS/WGBS_02_DML-DMR.r"
 ## 24NCC and Iri epi signals at those regions ##  
@@ -154,3 +154,30 @@ plotHeatmap -m Mel_ALX4_in_soloDAR_soloDMR_DMAR_s24vIri_bs100_1500UpAndDown.mat.
 plotHeatmap -m Mel_GBX2_in_soloDAR_soloDMR_DMAR_s24vIri_bs100_1500UpAndDown.mat.gz -out Mel_GBX2_in_soloDAR_soloDMR_DMAR_s24vIri_bs100_1500UpAndDown.mat.pdf -T "Mel in s24vIri soloDAR soloDMAR DMAR with GBX2 motif" --colorList 'blue,yellow,red' 'blue,yellow,red' 'white,green' 'white,green' --missingDataColor "white" --zMin 0 0 0 0 --zMax 1 1 120 120 --yMin 0 0 0 0 --yMax 1 1 110 110  --heatmapWidth 12 --refPointLabel "Center" --heatmapHeight 30
 plotHeatmap -m Mel_TFEC_in_soloDAR_soloDMR_DMAR_s24vIri_bs100_1500UpAndDown.mat.gz -out Mel_TFEC_in_soloDAR_soloDMR_DMAR_s24vIri_bs100_1500UpAndDown.mat.pdf -T "Mel in s24vIri soloDAR soloDMAR DMAR with TFEC motif" --colorList 'blue,yellow,red' 'blue,yellow,red' 'white,green' 'white,green' --missingDataColor "white" --zMin 0 0 0 0 --zMax 1 1 120 120 --yMin 0 0 0 0 --yMax 1 1 110 110  --heatmapWidth 12 --refPointLabel "Center" --heatmapHeight 30
 plotHeatmap -m Mel_SOX10_in_soloDAR_soloDMR_DMAR_s24vIri_bs100_1500UpAndDown.mat.gz -out Mel_SOX10_in_soloDAR_soloDMR_DMAR_s24vIri_bs100_1500UpAndDown.mat.pdf -T "Mel in s24vIri soloDAR soloDMAR DMAR with SOX10 motif" --colorList 'blue,yellow,red' 'blue,yellow,red' 'white,green' 'white,green' --missingDataColor "white" --zMin 0 0 0 0 --zMax 1 1 120 120 --yMin 0 0 0 0 --yMax 1 1 110 110  --heatmapWidth 12 --refPointLabel "Center" --heatmapHeight 30
+
+
+############### DNA methylation and ATAC signals of epigenetic dynamic regions from 24NCC to each pigment cell-type [For Fig.2f] ###############
+##Iri/Mel solo_hypo/hyper_DMRs, solo_opening/closing_DARs, hypo_opening/closing_DMARs location bed files are generated using code in "Integrative_analysis/Integrative-DMAR-analysis.r"
+# 24NCC -> Mel
+computeMatrix scale-regions -bs 200 \
+-S /scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_s24.bw \
+/scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_Mel.bw \
+/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_s24pos_merged_forDeeptools.bw \
+/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_Mel_merged_forDeeptools.bw \
+-R soloMel_openDAR_location.bed soloMel_closeDAR_location.bed soloMel_hypoDMR_location.bed \
+soloMel_hyperDMR_location.bed openingDMAR_s24vsMel_location.bed closingDMAR_s24vsMel_location.bed \
+--beforeRegionStartLength 3000 --regionBodyLength 1000 --afterRegionStartLength 3000 -o soloDAR_soloDMR_DMAR_s24vMel.mat.gz
+
+# 24NCC -> Iri
+computeMatrix scale-regions -bs 200 \
+-S /scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_s24.bw \
+/scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_Iri.bw \
+/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_s24pos_merged_forDeeptools.bw \
+/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_Iri_merged_forDeeptools.bw \
+-R soloIri_openDAR_location.bed soloIri_closeDAR_location.bed soloIri_hypoDMR_location.bed \
+soloIri_hyperDMR_location.bed openingDMAR_s24vsIri_location.bed closingDMAR_s24vsIri_location.bed \
+--beforeRegionStartLength 3000 --regionBodyLength 1000 --afterRegionStartLength 3000 -o soloDAR_soloDMR_DMAR_s24vIri.mat.gz
+
+# Make heatmap plot
+plotHeatmap -m soloDAR_soloDMR_DMAR_s24vMel.mat.gz -out soloDAR_soloDMR_DMAR_s24vMel_deeptools.pdf --colorList 'blue,yellow,red' 'blue,yellow,red' 'white,green' 'white,green' --missingDataColor "white" --zMin 0 0 0 0 --zMax 100 100 120 120 
+plotHeatmap -m soloDAR_soloDMR_DMAR_s24vIri.mat.gz -out soloDAR_soloDMR_DMAR_s24vIri_deeptools.pdf  --colorList 'blue,yellow,red' 'blue,yellow,red' 'white,green' 'white,green' --missingDataColor "white" --zMin 0 0 0 0 --zMax 100 100 120 120
