@@ -36,7 +36,7 @@ java -jar $PICARD_HOME/picard.jar MarkDuplicates REMOVE_SEQUENCING_DUPLICATES=Tr
 #Downsample reads to 35million (Example using samtool view -s subsample command)
 ## Input SAMPLE_MAPQ30.sorted.rmdup.bam
 ## Output SAMPLE.downsampled.bam
-samtools view -h -b -s 0.3125 "SAMPLE_MAPQ30.sorted.rmdup.bam" > "SAMPLE_MAPQ30.sorted.rmdup.downsampled.bam"
+samtools view -h -b -s 0.3125 "SAMPLE_MAPQ30.sorted.rmdup.bam" > "SAMPLE.downsampled.bam"
 
 #Calculate reads fraction in peaks (RFIP)#
 ## Input SAMPLE_MAPQ30.sorted.rmdup.downsampled.bam
@@ -46,15 +46,14 @@ for i in *downsampled.bam; do samtools view $i | wc -l ;done
 #35007919 Iri_Rep1.downsampled.bam
 #35016630 Iri_Rep2.downsampled.bam
 #34991229 Mel_Rep1.downsampled.bam
-#35016721 Mel_Rep4.downsampled.bam
+#35016721 Mel_Rep2.downsampled.bam
 #35040232 24hpf_pos_Rep1.downsampled.bam
 #34975335 24hpf_pos_Rep2.downsampled.bam
 
 # Using MethylQA to covert bam to single-end read bed file
 ## Input SAMPLE_MAPQ30.sorted.rmdup.downsampled.bam
 ## Output SAMPLE_MAPQ30.sorted.rmdup.downsampled.extend.bed
-methylQA density -Q 10 -r -T -E 0 -I 2000 -o "SAMPLE_MAPQ30.sorted.rmdup.downsampled" "danRer10_lite.size" "SAMPLE_MAPQ30.sorted.rmdup.downsampled.bam"
-
+methylQA density -Q 10 -r -T -E 0 -I 2000 -o "SAMPLE_MAPQ30.sorted.rmdup.downsampled" "danRer10_lite.size" "SAMPLE.downsampled.bam"
 
 # Shift transposome inserted site
 ## Input SAMPLE_MAPQ30.sorted.rmdup.downsampled.extend.bed
