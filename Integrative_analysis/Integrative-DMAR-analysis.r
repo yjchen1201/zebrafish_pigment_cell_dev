@@ -321,3 +321,22 @@ mypalette4 <- c("#c67363","#de937c","#8ba6c8","#97c2d5","#edaa1e")
 p <- ggplot(Amelt, aes(x=Annotation, y=value, fill=Type)) +geom_bar(stat="identity",colour = "black", position=position_dodge())+ggtitle("Annotation of Epigenetically Dynamic Regions")+theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 16), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
       labs(x = "Annotation", y = "Percent of peaks")+scale_fill_manual(values = mypalette4)+scale_color_manual(values=mypalette4)+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))+ theme(legend.title=element_text(size=16,face = "bold"),legend.text=element_text(size=12,face = "bold"))
 p
+                           
+# Generate files for DNA methylation and ATAC signal across iridophore-associated DM/ARs with a particular TF motif [Fig.3d and SupFig.7a]
+Iri_hypo_DMR<-DMAR[ DMAR$DMRs24vIri > 0 & DMAR$DARs24vIri == 0 & DMAR$DARs24vMel == 0,] #10697
+write.table(Iri_solo_hypo_DMR,"Iri_solo_hypoDMR_s24vsIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+
+Iri_hyper_DMR <-DMAR[DMAR$DARs24vMel == 0 & DMAR$DMRs24vIri < 0 & DMAR$DARs24vIri == 0,] #440 iri_solo_hyper DMR
+write.table(Iri_hyper_DMR,"Iri_solo_hyperDMR_s24vsIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+
+Iri_open_DAR <- DMAR[DMAR$DMRs24vIri == 0 & DMAR$DARs24vIri > 0 & DMAR$DMRs24vMel == 0,]# 4146 Iri openDAR
+write.table(Iri_open_DAR,"Iri_solo_openDAR_s24vsIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+
+Iri_close_DAR <- DMAR[DMAR$DMRs24vIri == 0 & DMAR$DARs24vIri < 0 & DMAR$DMRs24vMel == 0,]# 21168 Iri openDAR
+write.table(Iri_close_DAR,"Iri_solo_closeDAR_s24vsIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+
+Iri_hypoclosing_DMAR<-rbind(DMAR[DMAR$DMRs24vMel > 0 & DMAR$DARs24vMel < 0 & DMAR$DMRs24vIri > 0 & DMAR$DARs24vIri < 0,],DMAR[DMAR$DMRs24vIri > 0 & DMAR$DARs24vIri < 0 & DMAR$DMRs24vMel <= 0 & DMAR$DARs24vMel >= 0,] )#485
+write.table(Iri_hypoclosing_DMAR,"Iri_hypoclosing_DMAR_s24vsIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+
+Iri_hypoopening_DMAR<-rbind(DMAR[DMAR$DMRs24vMel > 0 & DMAR$DARs24vMel > 0 & DMAR$DMRs24vIri > 0 & DMAR$DARs24vIri > 0,],DMAR[DMAR$DMRs24vIri > 0 & DMAR$DARs24vIri > 0 & DMAR$DMRs24vMel <= 0 & DMAR$DARs24vMel <= 0,])#4381
+write.table(Iri_hypoopening_DMAR,"Iri_hypoopening_DMAR_s24vsIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
