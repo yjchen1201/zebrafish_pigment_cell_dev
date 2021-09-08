@@ -22,6 +22,8 @@ a <-ggplot(d, aes(Size, fill = Type, colour = Type)) + geom_density(alpha = 0, a
 a
 
 # Identify different classes of DMARs 
+All_DMRs <- DMAR[DMAR$DMRsize != 0,] #32715
+All_DARs <- DMAR[DMAR$DARsize !=0,] #54921
 Only_DARs <- DMAR[DMAR$DMRsize == 0 & DMAR$DARsize >0,] #39669
 Only_DMRs <- DMAR[DMAR$DARsize == 0 & DMAR$DMRsize >0,] #17463
 ## Calculate proportion of solitary hyper DMRs in hyper DMRs.
@@ -246,4 +248,30 @@ dmarplot2$Name <- factor(dmarplot2$Name, levels = c("solohyperDMR","solohypoDMR"
 
 p <- ggplot(data=dmarplot2, aes(x=Cell, y=Count, fill=Name)) +geom_bar(stat="identity",colour = "black", position=position_dodge())+ggtitle("DMAR count")+theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 16), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
       labs(x = "Cell state", y = "Number of DMARs")+scale_fill_manual(values = mypalette[c(1,2,3,4,9,10,7,8)])+scale_y_continuous(lim = c(0,16000))+scale_color_manual(values=mypalette[c(1,2,3,4,9,10,7,8)])+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))+geom_text(data=dmarplot2,position = position_dodge(width =0.9),aes(x=Cell,y=Count+400,label=Count),fontface='bold',hjust=0.5,size=5)
+p
+
+# Annotations of each type of DMAR [Figure 2d]
+Annotation_merged <-Reduce(function(x, y) merge(x, y,by = "Var1", all.x = T), list(as.data.frame(table(All_DMRs$Annotation)),
+as.data.frame(table(All_DARs$Annotation)),
+as.data.frame(table(Only_DMRs$Annotation)),
+as.data.frame(table(Only_DARs$Annotation)),
+as.data.frame(table(dynamic_DMARs$Annotation))))
+Annotation_merged[is.na(Annotation_merged)]<-0
+colnames(Annotation_merged) <- c("Annotation","DMRs","DARs","soloDMRs","soloDARs","dynamicDMARs")
+str(Annotation_merged)
+
+Annotation_merged$DMR <-  Annotation_merged$DMRs/sum(Annotation_merged$DMRs)*100
+Annotation_merged$DAR <-  Annotation_merged$DARs/sum(Annotation_merged$DARs)*100
+Annotation_merged$soloDMR <-  Annotation_merged$soloDMRs/sum(Annotation_merged$soloDMRs)*100
+Annotation_merged$soloDAR <-  Annotation_merged$soloDARs/sum(Annotation_merged$soloDARs)*100
+Annotation_merged$dynamicDMAR <-  Annotation_merged$dynamicDMARs/sum(Annotation_merged$dynamicDMARs)*100
+
+Amelt <- melt(Annotation_merged[,c(1,7,8,9,10,11)],id.vars = "Annotation")
+colnames(Amelt)[2]<- "Type"
+Amelt$Type <- factor(Amelt$Type, levels = c("DMR","soloDMR","DAR","soloDAR","dynamicDMAR"))
+Amelt$Annotation <- factor(Amelt$Annotation, levels = c("non-coding","Intergenic","promoter-TSS","5' UTR","exon","intron","3' UTR","TTS"))
+
+mypalette4 <- c("#c67363","#de937c","#8ba6c8","#97c2d5","#edaa1e")
+p <- ggplot(Amelt, aes(x=Annotation, y=value, fill=Type)) +geom_bar(stat="identity",colour = "black", position=position_dodge())+ggtitle("Annotation of Epigenetically Dynamic Regions")+theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 16), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
+      labs(x = "Annotation", y = "Percent of peaks")+scale_fill_manual(values = mypalette4)+scale_color_manual(values=mypalette4)+ theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank()) + theme(panel.background = element_rect(fill = 'white',colour = 'black'))+ theme(legend.title=element_text(size=16,face = "bold"),legend.text=element_text(size=12,face = "bold"))
 p
