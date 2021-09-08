@@ -340,3 +340,16 @@ write.table(Iri_hypoclosing_DMAR,"Iri_hypoclosing_DMAR_s24vsIri.bed", sep = "\t"
 
 Iri_hypoopening_DMAR<-rbind(DMAR[DMAR$DMRs24vMel > 0 & DMAR$DARs24vMel > 0 & DMAR$DMRs24vIri > 0 & DMAR$DARs24vIri > 0,],DMAR[DMAR$DMRs24vIri > 0 & DMAR$DARs24vIri > 0 & DMAR$DMRs24vMel <= 0 & DMAR$DARs24vMel <= 0,])#4381
 write.table(Iri_hypoopening_DMAR,"Iri_hypoopening_DMAR_s24vsIri.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+
+
+# Generate Iri/Mel solo_hypo/hyper_DMRs, solo_opening/closing_DARs, hypo_opening/closing_DMARs location files for [Fig.2f] 
+write.table(openingDMAR_s24vsMel[,c(1:3)],"openingDMAR_s24vsMel_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
+write.table(closingDMAR_s24vsMel[,c(1:3)],"closingDMAR_s24vsMel_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
+write.table(openingDMAR_s24vsIri[,c(1:3)],"openingDMAR_s24vsIri_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
+write.table(closingDMAR_s24vsIri[,c(1:3)],"closingDMAR_s24vsIri_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
+
+write.table(soloIri_openDAR[,c(1:3)],"soloIri_openDAR_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
+write.table(soloIri_closeDAR[,c(1:3)],"soloIri_closeDAR_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
+write.table(soloMel_openDAR[,c(1:3)],"soloMel_openDAR_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
+write.table(soloMel_closeDAR[,c(1:3)],"soloMel_closeDAR_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
+                        
