@@ -60,4 +60,4 @@ DMAR$aveCpGcount <- apply(DMAR,1,function(x) {(as.numeric(x[24])+as.numeric(x[25
 DMAR$CpGdensity100bp <- apply(DMAR,1,function(x) {(as.numeric(x[32])/as.numeric(x[5]))*100})
 DMAR$DARMelvIri <- DMAR$DARMelvIri*-1   ######### the directionality of DAR is switch for Mel v Iri for DARs!!!!###################
 
-write.table(DMAR, "/scratch/jjang/PIGMENT_PROJECT/Pigment_integrative_analysis_051418/Combined_analysis/All_DMAR_Combined_wINFO_NEW_042620.bed", row.names = F, col.names = T, sep = "\t",quote =F)
+write.table(DMAR, "All_DMAR_Combined_wINFO_NEW_042620.bed", row.names = F, col.names = T, sep = "\t",quote =F)
