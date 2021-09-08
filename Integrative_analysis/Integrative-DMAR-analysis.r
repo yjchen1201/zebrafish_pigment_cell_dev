@@ -643,3 +643,93 @@ p1<-ggplot(geneFC_DMR_DAR_DMAR[geneFC_DMR_DAR_DMAR$distance < 50000,], aes(x=typ
   theme(plot.title = element_text(hjust = 0.5, face = "bold",size = 14), axis.title=element_text(size=12,face = "bold"),axis.text.x = element_text(face = "bold",size = 12),axis.text.y = element_text(face = "bold",size = 12))+
   labs(x = "Sample", y = "gene log2(FC)")+scale_fill_manual(values = mypalette[c(1:4,9,10)])+scale_color_manual(values=mypalette[c(1:4,9,10)])+theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank())  + theme(panel.background = element_rect(fill = 'white',colour = 'black'))
 p1+facet_grid(.~comp)+geom_hline(yintercept=0,linetype="dashed",color="red")
+
+                 
+                 
+                 
+## Generate gene lists for Metascape GO term analysis [Fig.2g-2h,SupFig.1j,SupFig.5a-5d]
+### 1).pigment specific###
+hypoDMR_s24vsMel_specific <- DMAR[DMAR$DMRs24vMel >0 & DMAR$DMRs24vIri <=0,]
+hyperDMR_s24vsMel_specific <- DMAR[DMAR$DMRs24vMel <0 & DMAR$DMRs24vIri >=0,]
+hypoDMR_s24vsIri_specific <- DMAR[DMAR$DMRs24vIri >0 & DMAR$DMRs24vMel <=0,]
+hyperDMR_s24vsIri_specific <- DMAR[DMAR$DMRs24vIri <0 & DMAR$DMRs24vMel >=0,]
+
+openingDAR_s24vsMel_specific <- DMAR[DMAR$DARs24vMel >0 & DMAR$DARs24vIri <=0,]
+closingDAR_s24vsMel_specific <- DMAR[DMAR$DARs24vMel <0 & DMAR$DARs24vIri >=0,]
+openingDAR_s24vsIri_specific <- DMAR[DMAR$DARs24vIri >0 & DMAR$DARs24vMel <=0,]
+closingDAR_s24vsIri_specific <- DMAR[DMAR$DARs24vIri <0 & DMAR$DARs24vMel >=0,]
+
+openingDMAR_s24vsMel_specific <- openingDMAR_s24vsMel[!(openingDMAR_s24vsMel$chrompos %in% openingDMAR_s24vsIri$chrompos),]# hypo opening
+openingDMAR_s24vsIri_specific <- openingDMAR_s24vsIri[!(openingDMAR_s24vsIri$chrompos %in% openingDMAR_s24vsMel$chrompos),]# hypo opening
+
+# Save location files
+write.table(hypoDMR_s24vsMel_specific[,c(1:3)],"hypoDMR_s24vsMel_specific_location.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(hyperDMR_s24vsMel_specific[,c(1:3)],"hyperDMR_s24vsMel_specific_location.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(hypoDMR_s24vsIri_specific[,c(1:3)],"hypoDMR_s24vsIri_specific_location.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(hyperDMR_s24vsIri_specific[,c(1:3)],"hyperDMR_s24vsIri_specific_location.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+
+write.table(openingDAR_s24vsMel_specific[,c(1:3)],"openingDAR_s24vsMel_specific_location.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(closingDAR_s24vsMel_specific[,c(1:3)],"closingDAR_s24vsMel_specific_location.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(openingDAR_s24vsIri_specific[,c(1:3)],"openingDAR_s24vsIri_specific_location.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(closingDAR_s24vsIri_specific[,c(1:3)],"closingDAR_s24vsIri_specific_location.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+
+write.table(openingDMAR_s24vsMel_specific[,c(1:3)],"openingDMAR_s24vsMel_specific_location.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+write.table(openingDMAR_s24vsIri_specific[,c(1:3)],"openingDMAR_s24vsIri_specific_location.bed", sep = "\t", col.names = F, row.names =F,quote = F)
+
+### 2).Solo Iri/Mel DARs/DMRs location bed file ###
+# Extract Solo DMRs/DARs information out
+soloMel_hypoDMR<-(DMAR[DMAR$DMRs24vMel > 0 & DMAR$DARs24vMel == 0 & DMAR$DMRs24vIri <=0 & DMAR$DARs24vIri == 0 & DMAR$DARsize == 0 & DMAR$DMRsize >0,]) #6701 solo Mel hypoDMR 
+soloMel_hyperDMR<-(DMAR[DMAR$DMRs24vMel < 0 & DMAR$DARs24vMel == 0 & DMAR$DMRs24vIri >= 0 & DMAR$DARs24vIri == 0 & DMAR$DARsize == 0 & DMAR$DMRsize >0,]) #210 solo Mel hyperDMR
+soloMel_openDAR<-(DMAR[DMAR$DMRs24vMel == 0 & DMAR$DARs24vMel > 0 & DMAR$DMRs24vIri == 0 & DMAR$DARs24vIri <= 0 & DMAR$DMRsize == 0 & DMAR$DARsize >0,]) #3605 solo Mel openDAR
+soloMel_closeDAR<-(DMAR[DMAR$DMRs24vMel == 0 & DMAR$DARs24vMel < 0 & DMAR$DMRs24vIri == 0 & DMAR$DARs24vIri >= 0 & DMAR$DMRsize == 0 & DMAR$DARsize >0,]) #8807 solo Mel closeDAR
+
+soloIri_hypoDMR<-(DMAR[DMAR$DMRs24vIri > 0 & DMAR$DARs24vIri == 0 & DMAR$DMRs24vMel <=0 & DMAR$DARs24vMel == 0 &DMAR$DARsize == 0 & DMAR$DMRsize >0,]) #5672 solo Iri hypoDMR 
+soloIri_hyperDMR<-(DMAR[DMAR$DMRs24vIri < 0 & DMAR$DARs24vIri == 0 & DMAR$DMRs24vMel >= 0 & DMAR$DARs24vMel == 0 & DMAR$DARsize == 0 & DMAR$DMRsize >0,]) #289 solo Iri hyperDMR
+soloIri_openDAR<-(DMAR[DMAR$DMRs24vIri == 0 & DMAR$DARs24vIri > 0 & DMAR$DMRs24vMel == 0 & DMAR$DARs24vMel <= 0 & DMAR$DMRsize == 0 & DMAR$DARsize >0,]) #3645 solo Iri openDAR
+soloIri_closeDAR<-(DMAR[DMAR$DMRs24vIri == 0 & DMAR$DARs24vIri < 0 & DMAR$DMRs24vMel == 0 & DMAR$DARs24vMel >= 0 & DMAR$DMRsize == 0 & DMAR$DARsize >0,]) #6043 solo Iri closeDAR
+
+# Extract Solo DMRs/DARs location bed file
+write.table(soloMel_hypoDMR[,c(1:3)],"soloMel_hypoDMR_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
+write.table(soloMel_hyperDMR[,c(1:3)],"soloMel_hyperDMR_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
+write.table(soloIri_hypoDMR[,c(1:3)],"soloIri_hypoDMR_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
+write.table(soloIri_hyperDMR[,c(1:3)],"soloIri_hyperDMR_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
+
+write.table(soloIri_openDAR[,c(1:3)],"soloIri_openDAR_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
+write.table(soloIri_closeDAR[,c(1:3)],"soloIri_closeDAR_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
+write.table(soloMel_openDAR[,c(1:3)],"soloMel_openDAR_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
+write.table(soloMel_closeDAR[,c(1:3)],"soloMel_closeDAR_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
+
+# Extract top3000 DMRs location 
+soloMel_hypoDMR_order<-soloMel_hypoDMR[order(-soloMel_hypoDMR$DMRs24vMel),]
+write.table(soloMel_hypoDMR_order[1:3000,c(1:3)],"soloMel_hypoDMR_top3000_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
+soloIri_hypoDMR_order<-soloIri_hypoDMR[order(-soloIri_hypoDMR$DMRs24vIri),]
+write.table(soloIri_hypoDMR_order[1:3000,c(1:3)],"soloIri_hypoDMR_top3000_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
+
+### 3).Shared hypoDMR oepningDAR hypoo-peningDMAR ###
+#SupFig1j shared hypoDMRs nearest Mel/Iri DEGs 
+# "Mel_Iri_shared_hypoDMR_d30_p0.01.bed" is from "WGBS/WGBS_04_plot_merge_DMR.r"
+# Get only Coord information
+system("awk 'OFS="\t" {print $1,$2,$3,$1":"$2"-"$3}' Mel_Iri_shared_hypoDMR_d30_p0.01.bed > Mel_Iri_shared_hypoDMR_d30_p0.01_location.bed")
+
+#"Mel_Iri_shared_opening_DAR.bed" is from "ATAC/ATAC_05_DiffBind_call_DARs_from_IDR_peaks.r"
+# Get only Coord information
+system("awk 'OFS="\t" {print $1,$2,$3,$1":"$2"-"$3}' Mel_Iri_shared_opening_DAR.bed > Mel_Iri_shared_opening_DAR_location.bed")
+
+# Mel Iri shared hypo-opening DMAR
+M_I_shared_hypo_opening_DMAR <- DMAR[DMAR$DARs24vMel > 0 & DMAR$DMRs24vMel >0 & DMAR$DARs24vIri > 0 & DMAR$DMRs24vIri >0 ,]
+write.table(M_I_shared_hypo_opening_DMAR[,c(1:3)],"Mel_Iri_shared_hypo_opening.DMAR_location.bed", sep = "\t", col.names = F, row.names=F, quote = F)
+
+# 2. Find closest DEGs promoters of above regions, within 50kb
+#Input DEG promoter files("GRCz10.85.GENE.PROMOTER*.bed") are from "Integrative_analysis/Integrative-DMAR-analysis.r"
+## GRCz10.85.GENE.PROMOTER.DEGs15v24.bed
+## GRCz10.85.GENE.PROMOTER.DEGs24vMel.bed
+## GRCz10.85.GENE.PROMOTER.DEGs24vIri.bed
+
+# Example:
+## Sort location files first:
+system(" sort -k1,1 -k2,2n "DM/AR_location.bed" > "DM/AR_location.sorted.bed" ")
+# Use bedtools closest to find the closest DEG promoters
+system(" bedtools closest -d -a "DM/AR_location.sorted.bed" -b "GRCz10.85.GENE.PROMOTER*.bed" > "DM/AR_location.closestDEG_forMetascape.bed" ")
+# Filter out the DEGs which are > 50kb from corresponding DM/ARs using the last column in "DM/AR_location.closestDEG_forMetascape.bed"
+# Get the gene list as the input of Metascape (https://metascape.org/gp/index.html#/main/step1)
+# All the input gene lists can be found in "Input_files" folder           
