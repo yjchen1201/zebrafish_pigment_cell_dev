@@ -128,7 +128,7 @@ name <- Only_DARs_Mel_specific_open[,4]
 df.OG <- Only_DARs_Mel_specific_open[,c(21:23)]
 row.names(df.OG) <- name
 
-kclus <- kmeans(df.OG,10)
+kclus <- kmeans(df.OG,8)
 split <-  kclus$cluster
 ht = Heatmap(df.OG, column_title = "Mel-specific opening soloDAR)",name= "Methylation",col = colorRamp2(c(0, 50, 100), c("#0392cf", "#fdf498","#ee4035")), 
     cluster_rows = F, cluster_columns = FALSE,show_row_names = FALSE,split = split)
