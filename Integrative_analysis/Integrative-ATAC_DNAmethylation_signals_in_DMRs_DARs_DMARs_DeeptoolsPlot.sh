@@ -64,10 +64,10 @@ Iri_hypoclosing_DMAR_s24vsIri.onlyCoord.with_GBX2_MOTIF.bed \
 -o Iri_GBX2_in_soloDAR_soloDMR_DMAR_s24vIri_bs100_1500UpAndDown.mat.gz > Iri_GBX2_in_soloDAR_soloDMR_DMAR_s24vIri_bs100_1500UpAndDown.mat.gz.log 2>&1 &
   
 computeMatrix scale-regions -bs 100 -p max \
--S /scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_s24.bw \
-/scratch/jjang/PIGMENT_PROJECT/Rebuttal/DMR_BioRep/SmoothedCpG_Methylation_Iri.bw \
-/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_s24pos_merged_forDeeptools.bw \
-/scratch/jjang/PIGMENT_PROJECT/Pigment_ATAC_ALL/ATAC_Iri_merged_forDeeptools.bw \
+-S SmoothedCpG_Methylation_s24.bw \
+SmoothedCpG_Methylation_Iri.bw \
+ATAC_s24pos_merged_forDeeptools.bw \
+ATAC_Iri_merged_forDeeptools.bw \
 -R Iri_solo_openDAR_s24vsIri.onlyCoord.with_TFEC_MOTIF.bed \
 Iri_solo_closeDAR_s24vsIri.onlyCoord.with_TFEC_MOTIF.bed \
 Iri_solo_hypoDMR_s24vsIri.onlyCoord.with_TFEC_MOTIF.bed \
